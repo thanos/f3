@@ -1,0 +1,461 @@
+{
+  "upstream_sha": "bd92506447dc1333820cfe9a34ebbf497fe0219e",
+  "generator": "scripts/fixtures/generate.sh",
+  "generator_crate": "scripts/fixtures/generator",
+  "fixtures": [
+    {
+      "name": "small.f3",
+      "schema": [
+        {
+          "name": "trade_id",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "symbol",
+          "type": "utf8",
+          "nullable": false
+        },
+        {
+          "name": "price",
+          "type": "float64",
+          "nullable": false
+        }
+      ],
+      "rows": [
+        [
+          1,
+          "AAPL",
+          123.5
+        ],
+        [
+          2,
+          "MSFT",
+          234
+        ],
+        [
+          3,
+          "GOOG",
+          345.25
+        ]
+      ],
+      "options": {
+        "compression": "uncompressed",
+        "dictionary": "EncoderDictionary",
+        "row_groups": "one batch, default row group size",
+        "wasm": "none"
+      },
+      "notes": "Three non-null rows. One write_batch call.",
+      "bytes": 4168,
+      "sha256": "6f1ff9d7202c3f0d8f910a4ef154ba195cd225804d261ca752339cc8fc123a13"
+    },
+    {
+      "name": "nullable.f3",
+      "schema": [
+        {
+          "name": "trade_id",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "symbol",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "price",
+          "type": "float64",
+          "nullable": true
+        }
+      ],
+      "rows": [
+        [
+          1,
+          "AAPL",
+          123.5
+        ],
+        [
+          null,
+          null,
+          234
+        ],
+        [
+          3,
+          "GOOG",
+          null
+        ]
+      ],
+      "options": {
+        "compression": "uncompressed",
+        "dictionary": "EncoderDictionary",
+        "row_groups": "one batch, default row group size",
+        "wasm": "none"
+      },
+      "notes": "Each column contains one null.",
+      "bytes": 5064,
+      "sha256": "01ca80d139267bbecfe0dc52c295061919c2f56bf8f31f5d4833a8d9c55cb79b"
+    },
+    {
+      "name": "wide.f3",
+      "schema": [
+        {
+          "name": "col_00",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_01",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_02",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_03",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_04",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_05",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_06",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_07",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_08",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_09",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_10",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_11",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_12",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_13",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_14",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "col_15",
+          "type": "int64",
+          "nullable": false
+        }
+      ],
+      "rows": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        [
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115
+        ]
+      ],
+      "options": {
+        "compression": "uncompressed",
+        "dictionary": "EncoderDictionary",
+        "column_count": 16,
+        "wasm": "none"
+      },
+      "notes": "Sixteen int64 columns, two rows.",
+      "bytes": 30640,
+      "sha256": "5ec5884b535c2d067fb973370cbba6707ee525e6b55fcb120d4e2b4798f56fd7"
+    },
+    {
+      "name": "multi_row_group.f3",
+      "schema": [
+        {
+          "name": "trade_id",
+          "type": "int64",
+          "nullable": false
+        }
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          2
+        ],
+        [
+          3
+        ]
+      ],
+      "options": {
+        "compression": "uncompressed",
+        "dictionary": "EncoderDictionary",
+        "row_group_size": 2,
+        "write_batches": 2,
+        "wasm": "none"
+      },
+      "notes": "First batch has 2 rows and meets row_group_size inside write_batch. Second batch has 1 row and is closed by finish.",
+      "bytes": 3072,
+      "sha256": "1fcc530973663cd6e7b7d6482b492861fd19d0db519427e83e16ca206a4867f8"
+    },
+    {
+      "name": "compressed_zstd.f3",
+      "schema": [
+        {
+          "name": "value",
+          "type": "int64",
+          "nullable": false
+        }
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      "options": {
+        "compression": "zstd",
+        "dictionary": "EncoderDictionary",
+        "wasm": "none"
+      },
+      "notes": "Repeated int64 values so the encoder has a compressible column.",
+      "bytes": 1216,
+      "sha256": "e7b37c9e6f9bf3901eb5691116233be8278d176a4ab9cdd1d34798866b286c47"
+    },
+    {
+      "name": "compressed_lz4.f3",
+      "schema": [
+        {
+          "name": "value",
+          "type": "int64",
+          "nullable": false
+        }
+      ],
+      "rows": [
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          1
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      "options": {
+        "compression": "lz4",
+        "dictionary": "EncoderDictionary",
+        "wasm": "none"
+      },
+      "notes": "Repeated int64 values so the encoder has a compressible column.",
+      "bytes": 1391,
+      "sha256": "b5d31b09d62e0e686531b3650928ef13a3f31969bc81e6ca27ffa594481844b2"
+    },
+    {
+      "name": "dictionary.f3",
+      "schema": [
+        {
+          "name": "trade_id",
+          "type": "int64",
+          "nullable": false
+        },
+        {
+          "name": "symbol",
+          "type": "utf8",
+          "nullable": false
+        }
+      ],
+      "rows": [
+        [
+          1,
+          "AAPL"
+        ],
+        [
+          2,
+          "AAPL"
+        ],
+        [
+          3,
+          "MSFT"
+        ],
+        [
+          4,
+          "AAPL"
+        ]
+      ],
+      "options": {
+        "compression": "uncompressed",
+        "dictionary": "LocalDictionary",
+        "wasm": "none"
+      },
+      "notes": "FileWriterOptions dictionary_type LocalDictionary.",
+      "bytes": 4912,
+      "sha256": "9a91f3b586d35661c97d4400037e0a99d0551f04507b49173ab7dc2132c0d0b6"
+    },
+    {
+      "name": "nested.f3",
+      "schema": [
+        {
+          "name": "trade",
+          "type": "struct{b:int32, c:utf8}",
+          "nullable": true
+        },
+        {
+          "name": "nums",
+          "type": "list<int32>",
+          "nullable": false
+        }
+      ],
+      "rows": [
+        [
+          {
+            "b": 1,
+            "c": "a"
+          },
+          [
+            1,
+            2
+          ]
+        ],
+        [
+          {
+            "b": 2,
+            "c": "b"
+          },
+          [
+            3
+          ]
+        ],
+        [
+          {
+            "b": null,
+            "c": null
+          },
+          [
+
+          ]
+        ],
+        [
+          {
+            "b": 4,
+            "c": "d"
+          },
+          [
+            4
+          ]
+        ]
+      ],
+      "options": {
+        "compression": "uncompressed",
+        "dictionary": "EncoderDictionary",
+        "shape": "struct and list<int32>",
+        "wasm": "none"
+      },
+      "notes": "One nullable struct column and one list<int32> column.",
+      "bytes": 7200,
+      "sha256": "513484d51ab71b8a18cb27a062ab04da2ac340e0827d49ab9e7734bb697d0407"
+    }
+  ],
+  "skipped": [
+    {
+      "name": "custom_wasm.f3",
+      "reason": "built-in wasm artifact is missing. FileWriterOptions::write_built_in_wasm reads fff-test-util BUILTIN_WASM_PATH, which is target/wasm32-wasip1/opt-size-lvl3/fff_ude_example_fff.wasm under the upstream checkout. The wasm32-wasip1 build of fff-ude-example-fff failed while compiling zstd-sys. Distinct clang errors:\nfatal error: 'stdlib.h' file not found\nfatal error: 'string.h' file not found\nfatal error: 'stdio.h' file not found\nfatal error: 'assert.h' file not found"
+    }
+  ],
+  "manifest_generated_at": "2026-11-03T01:03:52Z"
+}

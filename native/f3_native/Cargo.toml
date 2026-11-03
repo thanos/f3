@@ -1,0 +1,15 @@
+[package]
+name = "f3_native"
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "Optional stable-Rust scaffold for the F3 Elixir library. It does not decode files."
+
+[lib]
+name = "f3_native"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.38.0"

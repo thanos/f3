@@ -1,0 +1,72 @@
+# Required jobs must pass. Jobs whose names start with "informational" may
+# fail (continue-on-error) and do not gate the branch.
+#
+# informational-native compiles the optional NIF.
+# informational-fixtures regenerates fixtures from upstream and runs only on
+# workflow_dispatch. Required jobs check the committed manifest. They do not
+# clone Vortex or Lance.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.20.2"
+          otp-version: "28"
+      - run: mix deps.get
+      - run: mix format --check-formatted
+      - run: mix compile --warnings-as-errors
+      - run: mix test
+      - run: mix docs
+
+  informational-native:
+    name: informational native (${{ matrix.os }})
+    continue-on-error: true
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.20.2"
+          otp-version: "28"
+      - uses: dtolnay/rust-toolchain@stable
+      - run: mix deps.get
+        env:
+          F3_BUILD_NATIVE: "1"
+      - run: mix compile --warnings-as-errors
+        env:
+          F3_BUILD_NATIVE: "1"
+      - run: mix test
+        env:
+          F3_BUILD_NATIVE: "1"
+
+  informational-fixtures:
+    name: informational fixture regeneration
+    continue-on-error: true
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-02-24
+          targets: wasm32-wasip1
+      - run: scripts/fixtures/generate.sh

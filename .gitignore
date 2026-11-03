@@ -1,0 +1,23 @@
+# Mix
+/_build/
+/cover/
+/deps/
+/doc/
+erl_crash.dump
+*.ez
+
+# Local upstream checkout and tool output
+/tmp/
+
+# Native crate build
+/native/f3_native/target/
+/priv/native/
+
+# Fixture generator build
+/scripts/fixtures/generator/target/
+
+# Editor
+.elixir_ls/
+*.swp
+.tool-versions
+/baoulo/
