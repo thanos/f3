@@ -8,7 +8,7 @@ Nothing in this file is scheduled, submitted, or posted. It is a backlog for a p
 | --- | --- | --- | --- |
 | 1 | Why another file format? Introducing F3 | What the SIGMOD 2025 paper actually argues | elixir, parquet, file-formats |
 | 2 | Anatomy of an F3 file | The 32-byte tail, then the footer | elixir, binary, flatbuffers |
-| 3 | Your first F3 file in Elixir | Open, inspect, close, once inspection exists | elixir, iex |
+| 3 | Your first F3 file in Elixir | Open, inspect, close | elixir, iex |
 | 4 | Reading large data without overwhelming the BEAM | Batches, projection, and when not to call `to_rows` | elixir, streaming |
 | 5 | Writing F3 from Elixir | Schema, compression, and a round trip | elixir, arrow |
 | 6 | Taking the decoder with the data | Wasm, trust, and what stays off | elixir, webassembly |
@@ -16,7 +16,7 @@ Nothing in this file is scheduled, submitted, or posted. It is a backlog for a p
 | 8 | Building a safe binary-file reader on the BEAM | Bounds, NIFs, and a bug that the tests still catch | elixir, rustler |
 | 9 | Performance, compatibility, and what remains experimental | Numbers only from a recorded run | elixir, benchmarks |
 
-Articles 1 and 2 exist as technically reviewed drafts. Articles 3–9 have no files.
+Articles 1 and 2 exist as technically reviewed drafts. Article 3 exists as a draft. Articles 4–9 have no files.
 
 ## Canonical links
 
@@ -28,7 +28,8 @@ When a post exists, its canonical URL should point at one place, not at both the
 | --- | --- | --- |
 | 1 | File regions: data, Wasm, column metadata, footer, postscript | Mermaid in the article |
 | 2 | Postscript fields, then footer, then data | Mermaid in the article |
-| 3–9 | none yet | add only when the article is written |
+| 3 | Open, postscript, footer, then stop before rows | Mermaid in the article |
+| 4–9 | none yet | add only when the article is written |
 
 No external images. A text description sits next to each Mermaid block in the article itself.
 

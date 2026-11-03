@@ -76,8 +76,11 @@ defmodule F3.MixProject do
         {"docs/tutorials/README.md", [filename: "tutorials", title: "Tutorials"]},
         {"docs/tutorials/01-why-f3.md", [title: "Why F3?"]},
         {"docs/tutorials/02-anatomy-of-an-f3-file.md", [title: "Anatomy of an F3 file"]},
+        {"docs/tutorials/03-your-first-f3-file-in-elixir.md",
+         [title: "Your first F3 file in Elixir"]},
         {"docs/tutorials/publication-plan.md", [title: "Publication plan"]},
-        {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]}
+        {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]},
+        {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]}
       ]
     ]
   end

@@ -45,7 +45,7 @@ defmodule F3.ContractTest do
     assert file.origin == :memory
     refute inspect(file) =~ @marker
 
-    assert {:error, %F3.Error{category: :not_implemented} = error} = F3.schema(file)
+    assert {:error, %F3.Error{category: :truncated} = error} = F3.schema(file)
     refute error.message =~ @marker
     refute inspect(error) =~ @marker
 
@@ -58,23 +58,25 @@ defmodule F3.ContractTest do
     assert {:error, %F3.Error{category: :closed}} = F3.inspect(closed)
   end
 
-  test "open file operations are explicitly unimplemented" do
+  test "a short buffer is truncated and row access stays unimplemented" do
     assert {:ok, file} = F3.open({:memory, "not an f3 file"})
 
+    assert {:error, %F3.Error{category: :truncated}} = F3.schema(file)
+    assert {:error, %F3.Error{category: :truncated}} = F3.metadata(file)
+    assert {:error, %F3.Error{category: :truncated}} = F3.inspect(file)
+
     for {fun, args} <- [
-          {:schema, [file]},
-          {:metadata, [file]},
           {:read, [file]},
           {:read, [file, [columns: ["symbol"]]]},
           {:stream, [file]},
-          {:stream, [file, [batch_size: 8]]},
-          {:inspect, [file]}
+          {:stream, [file, [batch_size: 8]]}
         ] do
       assert {:error, %F3.Error{category: :not_implemented}} = apply(F3, fun, args)
     end
 
     assert {:error, %F3.Error{category: :invalid_argument}} = F3.read(file, :bad)
     assert {:error, %F3.Error{category: :invalid_argument}} = F3.stream(file, :bad)
+    assert {:error, %F3.Error{category: :invalid_argument}} = F3.inspect(file, :bad)
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Batch.to_rows(%F3.Batch{})
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.open("out.f3")
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.write(:writer, [])

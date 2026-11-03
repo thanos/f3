@@ -3,8 +3,8 @@ defmodule F3.Format do
   Pinned wire-format constants from upstream F3.
 
   These values were read from `fff-format/src/lib.rs` and `format/File.fbs`
-  at commit `bd92506447dc1333820cfe9a34ebbf497fe0219e`. This module does not
-  parse a file. Postscript decoding is Stage 1.
+  at commit `bd92506447dc1333820cfe9a34ebbf497fe0219e`. This module holds
+  the constants. `F3.Postscript` reads them from a file.
 
   The postscript is 32 little-endian bytes at the end of the file. The two
   magic bytes `F3` are last.

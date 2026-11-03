@@ -1,0 +1,548 @@
+{
+  "encoding_versions": [
+    {
+      "encoding": "custom_wasm",
+      "version": "1.0.0"
+    },
+    {
+      "encoding": "cascade",
+      "version": "0.21.0"
+    }
+  ],
+  "logical_tree": {
+    "children": [
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      }
+    ],
+    "id": "struct"
+  },
+  "optional_sections": [
+    {
+      "compression": "uncompressed",
+      "name": "WASMBinaries",
+      "offset": 26624,
+      "size": 24
+    }
+  ],
+  "postscript": {
+    "checksum_type": "xxhash",
+    "data_checksum": 3777862781095627140,
+    "footer_compression": "uncompressed",
+    "footer_size": 1920,
+    "major_version": 0,
+    "metadata_size": 3960,
+    "minor_version": 1,
+    "schema_checksum": 5082075518509375594
+  },
+  "row_groups": [
+    {
+      "columns": [
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 0,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 1664,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 3328,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 4992,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 6656,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 8320,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 9984,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 11648,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 13312,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 14976,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 16640,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 18304,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 19968,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 21632,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 23296,
+              "size": 1664
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 1664,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 2,
+              "offset": 24960,
+              "size": 1664
+            }
+          ]
+        }
+      ],
+      "offset": 0,
+      "row_count": 2,
+      "size": 26624
+    }
+  ],
+  "schema": [
+    {
+      "name": "col_00",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_01",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_02",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_03",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_04",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_05",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_06",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_07",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_08",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_09",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_10",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_11",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_12",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_13",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_14",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "col_15",
+      "nullable": false,
+      "type": "int64"
+    }
+  ],
+  "shared_dictionary": {
+    "chunks": [],
+    "positions": [],
+    "schema": [],
+    "schema_bytes": 48
+  }
+}

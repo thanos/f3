@@ -1,0 +1,83 @@
+{
+  "encoding_versions": [
+    {
+      "encoding": "custom_wasm",
+      "version": "1.0.0"
+    },
+    {
+      "encoding": "cascade",
+      "version": "0.21.0"
+    }
+  ],
+  "logical_tree": {
+    "children": [
+      {
+        "children": [],
+        "id": "flat"
+      }
+    ],
+    "id": "struct"
+  },
+  "optional_sections": [
+    {
+      "compression": "uncompressed",
+      "name": "WASMBinaries",
+      "offset": 615,
+      "size": 24
+    }
+  ],
+  "postscript": {
+    "checksum_type": "xxhash",
+    "data_checksum": 10738441224704272028,
+    "footer_compression": "uncompressed",
+    "footer_size": 592,
+    "major_version": 0,
+    "metadata_size": 720,
+    "minor_version": 1,
+    "schema_checksum": 4742290131846334719
+  },
+  "row_groups": [
+    {
+      "columns": [
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "lz4",
+                  "encoding": "cascade",
+                  "num_rows": 8,
+                  "size": 615,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 8,
+              "offset": 0,
+              "size": 615
+            }
+          ]
+        }
+      ],
+      "offset": 0,
+      "row_count": 8,
+      "size": 615
+    }
+  ],
+  "schema": [
+    {
+      "name": "value",
+      "nullable": false,
+      "type": "int64"
+    }
+  ],
+  "shared_dictionary": {
+    "chunks": [],
+    "positions": [],
+    "schema": [],
+    "schema_bytes": 48
+  }
+}

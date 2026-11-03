@@ -1,0 +1,145 @@
+{
+  "encoding_versions": [
+    {
+      "encoding": "custom_wasm",
+      "version": "1.0.0"
+    },
+    {
+      "encoding": "cascade",
+      "version": "0.21.0"
+    }
+  ],
+  "logical_tree": {
+    "children": [
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      }
+    ],
+    "id": "struct"
+  },
+  "optional_sections": [
+    {
+      "compression": "uncompressed",
+      "name": "WASMBinaries",
+      "offset": 3840,
+      "size": 24
+    }
+  ],
+  "postscript": {
+    "checksum_type": "xxhash",
+    "data_checksum": 10007466406498791361,
+    "footer_compression": "uncompressed",
+    "footer_size": 792,
+    "major_version": 0,
+    "metadata_size": 1168,
+    "minor_version": 1,
+    "schema_checksum": 11025302958531628020
+  },
+  "row_groups": [
+    {
+      "columns": [
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 3,
+                  "size": 1920,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 3,
+              "offset": 0,
+              "size": 1920
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 3,
+                  "size": 1088,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 3,
+              "offset": 1920,
+              "size": 1088
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "kind": "none"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 3,
+                  "size": 832,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 3,
+              "offset": 3008,
+              "size": 832
+            }
+          ]
+        }
+      ],
+      "offset": 0,
+      "row_count": 3,
+      "size": 3840
+    }
+  ],
+  "schema": [
+    {
+      "name": "trade_id",
+      "nullable": true,
+      "type": "int64"
+    },
+    {
+      "name": "symbol",
+      "nullable": true,
+      "type": "utf8"
+    },
+    {
+      "name": "price",
+      "nullable": true,
+      "type": "float64"
+    }
+  ],
+  "shared_dictionary": {
+    "chunks": [],
+    "positions": [],
+    "schema": [],
+    "schema_bytes": 48
+  }
+}

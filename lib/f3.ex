@@ -4,11 +4,14 @@ defmodule F3 do
 
   Upstream F3 is a research prototype. This package does not read or write
   row data yet. `open/2` and `close/1` acquire and release a byte source.
-  `schema/1`, `metadata/1`, `read/2`, `stream/2`, and `inspect/2` check the
-  handle and then return `:not_implemented`.
+  `schema/1`, `metadata/1`, and `inspect/2` decode the postscript and the
+  FlatBuffers footer. `read/2` and `stream/2` stay `:not_implemented`.
 
   `stream/2` returns that error immediately. It does not read the file and
   it does not build a `Stream`.
+
+  `max_metadata_bytes` on the metadata calls caps the postscript size fields.
+  The default is `F3.Postscript.max_metadata_bytes/0`.
 
   A memory source is `open(path, source: {:memory, binary})` or
   `open({:memory, binary})`. When the `:source` option is a memory binary,
@@ -77,16 +80,39 @@ defmodule F3 do
   end
 
   @doc """
-  Returns the logical schema. Not implemented.
+  Returns the logical schema from the footer.
+
+  `max_metadata_bytes` overrides the allocation cap for this call.
   """
-  @spec schema(F3.File.t()) :: {:error, F3.Error.t()}
-  def schema(file), do: unimplemented(file, :schema)
+  @spec schema(F3.File.t(), keyword()) :: {:ok, F3.Schema.t()} | {:error, F3.Error.t()}
+  def schema(file, opts \\ [])
+
+  def schema(file, opts) when is_list(opts) do
+    with {:ok, metadata} <- load_metadata(file, opts, :schema, [:max_metadata_bytes]) do
+      {:ok, metadata.schema}
+    end
+  end
+
+  def schema(_file, _opts) do
+    {:error, F3.Error.invalid_argument(:schema, "options must be a keyword list")}
+  end
 
   @doc """
-  Returns file metadata. Not implemented.
+  Returns footer and column metadata.
+
+  Checksums are reported and not verified. Wasm sections are offsets only.
+  `max_metadata_bytes` overrides the allocation cap for this call.
   """
-  @spec metadata(F3.File.t()) :: {:error, F3.Error.t()}
-  def metadata(file), do: unimplemented(file, :metadata)
+  @spec metadata(F3.File.t(), keyword()) :: {:ok, F3.Metadata.t()} | {:error, F3.Error.t()}
+  def metadata(file, opts \\ [])
+
+  def metadata(file, opts) when is_list(opts) do
+    load_metadata(file, opts, :metadata, [:max_metadata_bytes])
+  end
+
+  def metadata(_file, _opts) do
+    {:error, F3.Error.invalid_argument(:metadata, "options must be a keyword list")}
+  end
 
   @doc """
   Reads row data. Not implemented. Options are not interpreted.
@@ -116,14 +142,27 @@ defmodule F3 do
   end
 
   @doc """
-  Textual inspection of a file. Not implemented.
+  Textual inspection of a file.
 
   This name is the public inspection API. It is unrelated to `Kernel.inspect/2`.
+  The default is a compact summary. `detail: true` adds row groups, encoding
+  units, and optional sections. `format: :json` returns the golden metadata
+  map encoded as JSON. Neither form includes column payloads.
+
+  `max_metadata_bytes` overrides the allocation cap for this call.
   """
-  @spec inspect(F3.File.t(), keyword()) :: {:error, F3.Error.t()}
+  @spec inspect(F3.File.t(), keyword()) :: {:ok, String.t()} | {:error, F3.Error.t()}
   def inspect(file, opts \\ [])
 
-  def inspect(file, opts) when is_list(opts), do: unimplemented(file, :inspect)
+  def inspect(file, opts) when is_list(opts) do
+    allowed = [:max_metadata_bytes, :detail, :format]
+
+    with {:ok, metadata} <- load_metadata(file, opts, :inspect, allowed),
+         {:ok, detail} <- boolean_option(opts, :detail, false, :inspect),
+         {:ok, format} <- output_format(opts) do
+      {:ok, F3.Inspection.render(metadata, format, detail)}
+    end
+  end
 
   def inspect(_file, _opts) do
     {:error, F3.Error.invalid_argument(:inspect, "options must be a keyword list")}
@@ -132,6 +171,43 @@ defmodule F3 do
   defp unimplemented(file, operation) do
     with {:ok, _file} <- ensure_open(file, operation) do
       {:error, F3.Error.not_implemented(operation)}
+    end
+  end
+
+  defp load_metadata(file, opts, operation, allowed) do
+    with {:ok, file} <- ensure_open(file, operation),
+         :ok <- reject_unknown_opts(opts, allowed, operation),
+         {:ok, max} <- metadata_cap(opts, operation) do
+      F3.Footer.load(file, max)
+    end
+  end
+
+  defp metadata_cap(opts, operation) do
+    case Keyword.get(opts, :max_metadata_bytes, F3.Postscript.max_metadata_bytes()) do
+      max when is_integer(max) and max >= 0 ->
+        {:ok, max}
+
+      _other ->
+        {:error,
+         F3.Error.invalid_argument(operation, "max_metadata_bytes must be a non-negative integer")}
+    end
+  end
+
+  defp boolean_option(opts, key, default, operation) do
+    case Keyword.get(opts, key, default) do
+      value when is_boolean(value) ->
+        {:ok, value}
+
+      _other ->
+        {:error, F3.Error.invalid_argument(operation, "#{key} must be a boolean")}
+    end
+  end
+
+  defp output_format(opts) do
+    case Keyword.get(opts, :format, :text) do
+      :text -> {:ok, :text}
+      :json -> {:ok, :json}
+      _other -> {:error, F3.Error.invalid_argument(:inspect, "format must be :text or :json")}
     end
   end
 
@@ -162,7 +238,7 @@ defmodule F3 do
     end
   end
 
-  defp reject_unknown_opts(opts, allowed) do
+  defp reject_unknown_opts(opts, allowed, operation \\ :open) do
     unknown = opts |> Keyword.keys() |> Enum.reject(&(&1 in allowed))
 
     case unknown do
@@ -170,7 +246,7 @@ defmodule F3 do
         :ok
 
       keys ->
-        {:error, F3.Error.invalid_argument(:open, "unknown options: #{Kernel.inspect(keys)}")}
+        {:error, F3.Error.invalid_argument(operation, "unknown options: #{Kernel.inspect(keys)}")}
     end
   end
 

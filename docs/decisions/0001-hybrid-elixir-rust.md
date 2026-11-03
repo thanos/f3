@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for Stage 0. Revisit when Stage 1 differential tests fail, or when Stage 2 must keep Arrow buffers alive across the NIF boundary.
+Accepted. Stage 1 decoded the footer in Elixir. The eight committed fixtures match the upstream reader's metadata JSON, so the Rust FlatBuffers bridge was not added. Revisit if a later fixture disagrees, or when Stage 2 must keep Arrow buffers alive across the NIF boundary.
 
 ## Context
 
@@ -18,7 +18,7 @@ Elixir callers need `{:ok, value}` and `{:error, %F3.Error{}}`, explicit close, 
 
 ## Decision
 
-Elixir owns the public API, errors, source lifecycle, version policy, and the postscript. Stage 1 will decode the FlatBuffers footer with a bounded pure-Elixir walker checked against pinned `File.fbs` and the upstream reader. A small stable-Rust `flatbuffers` 24.3.25 bridge is the fallback only if those tests fail. `f3_native` in this stage is a version probe behind `F3_BUILD_NATIVE=1`. It does not decode.
+Elixir owns the public API, errors, source lifecycle, version policy, and the postscript. Stage 1 decodes the FlatBuffers footer with a bounded pure-Elixir walker checked against pinned `File.fbs` and the upstream reader. A small stable-Rust `flatbuffers` 24.3.25 bridge is the fallback only if those tests fail. `f3_native` is a version probe behind `F3_BUILD_NATIVE=1`. It does not decode.
 
 Do not compile `fff-poc`, Vortex, or Wasmtime into `f3_native` for metadata.
 
@@ -26,7 +26,7 @@ Do not compile `fff-poc`, Vortex, or Wasmtime into `f3_native` for metadata.
 
 - `mix test` runs without Rust.
 - Postscript inspection cannot be broken by a NIF load failure.
-- Stage 1 has to be careful with vtable bounds. The fallback is a small Rust parser, not a fork of `fff-poc`.
+- Stage 1 walks vtables in Elixir with a depth cap and a visit cap. The fallback remains a small Rust parser, not a fork of `fff-poc`. It was not needed for the committed fixtures.
 - Stage 2 still needs a native decoder for Vortex and Wasm. That work starts from a new, narrow API, not from today's scaffold.
 - Wasm stays off. The scaffold has no interpreter.
 
