@@ -19,3 +19,5 @@ Experimental scaffold. Schema and footer metadata are decoded. Row reading and w
 - `F3.schema/1`, `F3.metadata/1`, and `F3.inspect/2` decode the Arrow IPC schema, row groups, column chunks, and encoding units. `mix f3.inspect` prints that text.
 - Golden metadata JSON from the pinned upstream reader, under `test/fixtures/golden/`.
 - Draft tutorial 3. Tutorial 2 now includes the real inspect output of `small.f3`.
+- Credo, and `mix ci` for the required CI checks. The alias stops at the first failure and runs `mix test --cover` with a 90% threshold.
+- Mox doubles for `F3.IO.Source` and `F3.IO.FileSystem`, used to exercise read and close failures.

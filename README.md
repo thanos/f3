@@ -31,8 +31,10 @@ Elixir 1.20.2 and OTP 28. The default `mix test` does not compile Rust.
 ```shell
 mix deps.get
 mix test
-mix docs
+mix ci
 ```
+
+`mix ci` is the required CI job: format, compile with warnings as errors, Credo, tests with coverage, and docs. It stops at the first failing step. The test step stops at the first failed test and requires 90% line coverage.
 
 Set `F3_BUILD_NATIVE=1` before `mix compile` to build the optional stable-Rust scaffold in `native/f3_native`. That crate reports its name and version. It does not decode files. Mix reads the flag while compiling `F3.Native`; change it with `mix compile --force`.
 

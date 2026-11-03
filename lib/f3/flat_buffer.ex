@@ -203,36 +203,36 @@ defmodule F3.FlatBuffer do
           {:ok, :none | {non_neg_integer(), t()}} | {:error, error()}
   def union(%__MODULE__{} = table, type_index) do
     with {:ok, type} <- scalar(table, type_index, :u8, 0) do
-      if type == 0 do
-        {:ok, :none}
-      else
-        case table(table, type_index + 1) do
-          {:ok, nil} -> {:error, :corrupt}
-          {:ok, child} -> {:ok, {type, child}}
-          {:error, _} = error -> error
-        end
-      end
+      union_value(table, type_index, type)
+    end
+  end
+
+  defp union_value(_table, _type_index, 0), do: {:ok, :none}
+
+  defp union_value(table, type_index, type) do
+    case table(table, type_index + 1) do
+      {:ok, nil} -> {:error, :corrupt}
+      {:ok, child} -> {:ok, {type, child}}
+      {:error, _} = error -> error
     end
   end
 
   defp read_strings(_bin, _base, 0), do: {:ok, []}
 
   defp read_strings(bin, base, len) do
-    Enum.reduce_while(0..(len - 1)//1, {:ok, []}, fn index, {:ok, acc} ->
-      case follow(bin, base + index * 4) do
-        {:ok, pos} ->
-          case read_string_at(bin, pos) do
-            {:ok, text} -> {:cont, {:ok, [text | acc]}}
-            {:error, _} = error -> {:halt, error}
-          end
-
-        {:error, _} = error ->
-          {:halt, error}
-      end
+    0..(len - 1)//1
+    |> Enum.reduce_while({:ok, []}, fn index, {:ok, acc} ->
+      read_one_string(bin, base + index * 4, acc)
     end)
-    |> case do
-      {:ok, acc} -> {:ok, Enum.reverse(acc)}
-      {:error, _} = error -> error
+    |> reverse_ok()
+  end
+
+  defp read_one_string(bin, at, acc) do
+    with {:ok, pos} <- follow(bin, at),
+         {:ok, text} <- read_string_at(bin, pos) do
+      {:cont, {:ok, [text | acc]}}
+    else
+      {:error, _} = error -> {:halt, error}
     end
   end
 
@@ -248,23 +248,24 @@ defmodule F3.FlatBuffer do
   defp read_tables(_parent, _base, 0), do: {:ok, []}
 
   defp read_tables(parent, base, len) do
-    Enum.reduce_while(0..(len - 1)//1, {:ok, []}, fn index, {:ok, acc} ->
-      case follow(parent.bin, base + index * 4) do
-        {:ok, pos} ->
-          case open_table(parent.bin, pos, parent.depth + 1) do
-            {:ok, child} -> {:cont, {:ok, [child | acc]}}
-            {:error, _} = error -> {:halt, error}
-          end
-
-        {:error, _} = error ->
-          {:halt, error}
-      end
+    0..(len - 1)//1
+    |> Enum.reduce_while({:ok, []}, fn index, {:ok, acc} ->
+      read_one_table(parent, base + index * 4, acc)
     end)
-    |> case do
-      {:ok, acc} -> {:ok, Enum.reverse(acc)}
-      {:error, _} = error -> error
+    |> reverse_ok()
+  end
+
+  defp read_one_table(parent, at, acc) do
+    with {:ok, pos} <- follow(parent.bin, at),
+         {:ok, child} <- open_table(parent.bin, pos, parent.depth + 1) do
+      {:cont, {:ok, [child | acc]}}
+    else
+      {:error, _} = error -> {:halt, error}
     end
   end
+
+  defp reverse_ok({:ok, acc}), do: {:ok, Enum.reverse(acc)}
+  defp reverse_ok({:error, _} = error), do: error
 
   defp read_uints(body, len, width) do
     Enum.map(0..(len - 1)//1, fn index ->

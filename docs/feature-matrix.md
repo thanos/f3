@@ -25,7 +25,7 @@ The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/sta
 | `CUSTOM_WASM` decode or execution | not implemented | encoding id and Wasm pointers are reported; bytes are not read |
 | Dictionary, Zstd, Lz4, nested types | metadata only | local dictionary, zstd, lz4, list, and struct are decoded from the footer; values are not |
 | Optional NIF version probe | implemented when `F3_BUILD_NATIVE=1` | macOS arm64, rustc 1.97.1, Elixir 1.20.2 / OTP 28: `{:ok, {"f3_native", "0.0.1"}}`. Default build: `{:error, :native_unavailable}`. Linux not run. |
-| macOS arm64 local Elixir tests | passed | Elixir 1.20.2, OTP 28.3.1, `mix test`: 30 passed. See [test-reports/stage-1.md](test-reports/stage-1.md). |
+| macOS arm64 local Elixir tests | passed | Elixir 1.20.2, OTP 28.3.1. `mix test --cover` passes the 90% threshold. See [test-reports/stage-1.md](test-reports/stage-1.md). |
 | Linux x86_64 CI | configured, not run | `.github/workflows/ci.yml` job `test (ubuntu-latest)` |
 | macOS arm64 CI | configured, not run | `.github/workflows/ci.yml` job `test (macos-14)` |
 | Linux arm64 | untested | no job |

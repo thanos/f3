@@ -20,6 +20,9 @@ defmodule F3 do
 
   import Kernel, except: [inspect: 1]
 
+  alias F3.IO.Local
+  alias F3.IO.Memory
+
   @doc """
   Opens a local path or an in-memory binary.
 
@@ -219,9 +222,9 @@ defmodule F3 do
   end
 
   defp open_local(path) do
-    case F3.IO.Local.open(path) do
+    case Local.open(path) do
       {:ok, state} ->
-        {:ok, %F3.File{source_module: F3.IO.Local, source_state: state, origin: path}}
+        {:ok, %F3.File{source_module: Local, source_state: state, origin: path}}
 
       {:error, %F3.Error{}} = error ->
         error
@@ -229,9 +232,9 @@ defmodule F3 do
   end
 
   defp open_memory(binary) do
-    case F3.IO.Memory.open(binary) do
+    case Memory.open(binary) do
       {:ok, state} ->
-        {:ok, %F3.File{source_module: F3.IO.Memory, source_state: state, origin: :memory}}
+        {:ok, %F3.File{source_module: Memory, source_state: state, origin: :memory}}
 
       {:error, %F3.Error{}} = error ->
         error

@@ -25,6 +25,9 @@ defmodule F3.PostscriptTest do
     assert {:error, %F3.Error{category: :unsupported_version}} =
              open_memory(file(8, 8, minor: 2))
 
+    assert {:error, %F3.Error{category: :unsupported_version}} =
+             open_memory(file(8, 8, major: 1))
+
     assert {:error, %F3.Error{category: :unsupported_encoding}} =
              open_memory(file(8, 8, compression: 1))
 
@@ -65,10 +68,11 @@ defmodule F3.PostscriptTest do
     compression = Keyword.get(opts, :compression, 0)
     checksum = Keyword.get(opts, :checksum, 0)
     minor = Keyword.get(opts, :minor, 1)
+    major = Keyword.get(opts, :major, 0)
     magic = Keyword.get(opts, :magic, "F3")
 
     padding <>
       <<metadata_size::little-32, footer_size::little-32, compression, checksum, 0::little-64,
-        0::little-64, 0::little-16, minor::little-16, magic::binary>>
+        0::little-64, major::little-16, minor::little-16, magic::binary>>
   end
 end

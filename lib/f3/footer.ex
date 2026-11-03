@@ -192,24 +192,25 @@ defmodule F3.Footer do
         corrupt("row groups are missing")
 
       {:ok, groups} ->
-        with {:ok, counts} <- FB.uints(groups, 0, 4),
-             {:ok, offsets} <- FB.uints(groups, 1, 8),
-             {:ok, sizes} <- FB.uints(groups, 2, 4),
-             {:ok, metas} <- FB.tables(groups, 3),
-             :ok <- same_length([counts, offsets, sizes, metas]) do
-          groups =
-            [counts, offsets, sizes, metas]
-            |> Enum.zip()
-            |> Enum.with_index()
-            |> map_ok(fn {{count, offset, size, meta}, index} ->
-              one_group(index, count, offset, size, meta, span, postscript, schema)
-            end)
-
-          groups
-        end
+        decode_row_groups(groups, span, postscript, schema)
 
       {:error, reason} ->
         flat_error(reason)
+    end
+  end
+
+  defp decode_row_groups(groups, span, postscript, schema) do
+    with {:ok, counts} <- FB.uints(groups, 0, 4),
+         {:ok, offsets} <- FB.uints(groups, 1, 8),
+         {:ok, sizes} <- FB.uints(groups, 2, 4),
+         {:ok, metas} <- FB.tables(groups, 3),
+         :ok <- same_length([counts, offsets, sizes, metas]) do
+      [counts, offsets, sizes, metas]
+      |> Enum.zip()
+      |> Enum.with_index()
+      |> map_ok(fn {{count, offset, size, meta}, index} ->
+        one_group(index, count, offset, size, meta, span, postscript, schema)
+      end)
     end
   end
 
@@ -290,22 +291,30 @@ defmodule F3.Footer do
         {:ok, :none}
 
       {:ok, {2, local}} ->
-        case FB.uints(local, 0, 4) do
-          {:ok, indexes} -> {:ok, {:local, indexes}}
-          {:error, reason} -> flat_error(reason)
-        end
+        local_dictionary(local)
 
       {:ok, {3, shared}} ->
-        case FB.scalar(shared, 0, :u32, 0) do
-          {:ok, index} -> {:ok, {:shared, index}}
-          {:error, reason} -> flat_error(reason)
-        end
+        shared_dictionary_ref(shared)
 
       {:ok, {type, _other}} ->
         corrupt("unknown dictionary encoding #{type}")
 
       {:error, reason} ->
         flat_error(reason)
+    end
+  end
+
+  defp local_dictionary(local) do
+    case FB.uints(local, 0, 4) do
+      {:ok, indexes} -> {:ok, {:local, indexes}}
+      {:error, reason} -> flat_error(reason)
+    end
+  end
+
+  defp shared_dictionary_ref(shared) do
+    case FB.scalar(shared, 0, :u32, 0) do
+      {:ok, index} -> {:ok, {:shared, index}}
+      {:error, reason} -> flat_error(reason)
     end
   end
 
@@ -360,13 +369,15 @@ defmodule F3.Footer do
 
   defp encoding_versions(root) do
     with {:ok, versions} <- FB.tables(root, 4) do
-      map_ok(versions, fn version ->
-        with {:ok, type} <- FB.scalar(version, 0, :u8, 0),
-             {:ok, semver} <- FB.table(version, 1),
-             {:ok, decoded} <- semver(semver) do
-          {:ok, %{encoding: encoding_atom(type), version: decoded}}
-        end
-      end)
+      map_ok(versions, &one_version/1)
+    end
+  end
+
+  defp one_version(version) do
+    with {:ok, type} <- FB.scalar(version, 0, :u8, 0),
+         {:ok, semver} <- FB.table(version, 1),
+         {:ok, decoded} <- semver(semver) do
+      {:ok, %{encoding: encoding_atom(type), version: decoded}}
     end
   end
 
@@ -386,20 +397,24 @@ defmodule F3.Footer do
         {:ok, []}
 
       {:ok, sections} ->
-        with {:ok, names} <- string_vector(sections, 0),
-             {:ok, offsets} <- FB.uints(sections, 1, 8),
-             {:ok, sizes} <- FB.uints(sections, 2, 4),
-             {:ok, compressions} <- byte_vector(sections, 3),
-             :ok <- same_length([names, offsets, sizes, compressions]) do
-          [names, offsets, sizes, compressions]
-          |> Enum.zip()
-          |> map_ok(fn {name, offset, size, compression} ->
-            section(name, offset, size, compression, postscript)
-          end)
-        end
+        decode_sections(sections, postscript)
 
       {:error, reason} ->
         flat_error(reason)
+    end
+  end
+
+  defp decode_sections(sections, postscript) do
+    with {:ok, names} <- string_vector(sections, 0),
+         {:ok, offsets} <- FB.uints(sections, 1, 8),
+         {:ok, sizes} <- FB.uints(sections, 2, 4),
+         {:ok, compressions} <- byte_vector(sections, 3),
+         :ok <- same_length([names, offsets, sizes, compressions]) do
+      [names, offsets, sizes, compressions]
+      |> Enum.zip()
+      |> map_ok(fn {name, offset, size, compression} ->
+        section(name, offset, size, compression, postscript)
+      end)
     end
   end
 
