@@ -45,7 +45,9 @@ jobs:
         with:
           elixir-version: "1.20.2"
           otp-version: "28"
-      - uses: dtolnay/rust-toolchain@nightly-2025-11-15
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-11-15
       - run: mix deps.get
         env:
           F3_BUILD_NATIVE: "1"
