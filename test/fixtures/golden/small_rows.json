@@ -1,0 +1,17 @@
+[
+  {
+    "price": 123.5,
+    "symbol": "AAPL",
+    "trade_id": 1
+  },
+  {
+    "price": 234.0,
+    "symbol": "MSFT",
+    "trade_id": 2
+  },
+  {
+    "price": 345.25,
+    "symbol": "GOOG",
+    "trade_id": 3
+  }
+]

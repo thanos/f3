@@ -1,7 +1,9 @@
 # Required jobs must pass. Jobs whose names start with "informational" may
 # fail (continue-on-error) and do not gate the branch.
 #
-# informational-native compiles the optional NIF.
+# informational-native is the stable-Rust version probe. Vortex does not build
+# on stable, so that job is expected to fail. The required decode job uses
+# nightly-2025-11-15.
 # informational-fixtures regenerates fixtures from upstream and runs only on
 # workflow_dispatch. Required jobs check the committed manifest. They do not
 # clone Vortex or Lance.
@@ -29,6 +31,30 @@ jobs:
           otp-version: "28"
       - run: mix deps.get
       - run: mix ci
+
+  decode:
+    name: decode (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.20.2"
+          otp-version: "28"
+      - uses: dtolnay/rust-toolchain@nightly-2025-11-15
+      - run: mix deps.get
+        env:
+          F3_BUILD_NATIVE: "1"
+      - run: mix compile --force --warnings-as-errors
+        env:
+          F3_BUILD_NATIVE: "1"
+      - run: mix test --only native
+        env:
+          F3_BUILD_NATIVE: "1"
 
   informational-native:
     name: informational native (${{ matrix.os }})

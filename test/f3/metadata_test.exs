@@ -75,10 +75,10 @@ defmodule F3.MetadataTest do
     assert Enum.map(groups, & &1.num_rows) == [2, 1]
   end
 
-  test "read and stream stay unimplemented and do not scan a valid file" do
+  test "read reports native_unavailable when the NIF is absent" do
     {:ok, file} = F3.open("test/fixtures/small.f3")
-    assert {:error, %F3.Error{category: :not_implemented}} = F3.read(file)
-    assert {:error, %F3.Error{category: :not_implemented}} = F3.stream(file)
+    assert {:error, %F3.Error{category: :native_unavailable}} = F3.read(file)
+    assert {:error, %F3.Error{category: :native_unavailable}} = F3.stream(file)
   end
 
   test "inspect text and json agree with the metadata map" do

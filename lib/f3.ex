@@ -2,13 +2,11 @@ defmodule F3 do
   @moduledoc """
   Experimental Elixir API for the F3 columnar file format.
 
-  Upstream F3 is a research prototype. This package does not read or write
-  row data yet. `open/2` and `close/1` acquire and release a byte source.
-  `schema/1`, `metadata/1`, and `inspect/2` decode the postscript and the
-  FlatBuffers footer. `read/2` and `stream/2` stay `:not_implemented`.
-
-  `stream/2` returns that error immediately. It does not read the file and
-  it does not build a `Stream`.
+  Upstream F3 is a research prototype. `open/2` and `close/1` acquire and
+  release a byte source. `schema/1`, `metadata/1`, and `inspect/2` decode the
+  postscript and the FlatBuffers footer. `read/2` returns columnar batches.
+  `stream/2` returns a lazy stream and does not pread until the first pull.
+  Writing is not implemented. Wasm bytes are not executed.
 
   `max_metadata_bytes` on the metadata calls caps the postscript size fields.
   The default is `F3.Postscript.max_metadata_bytes/0`.
@@ -118,31 +116,32 @@ defmodule F3 do
   end
 
   @doc """
-  Reads row data. Not implemented. Options are not interpreted.
+  Reads row data into columnar batches.
+
+  Options:
+
+    * `:columns` — logical field names. Omitted means every top-level field.
+      An unknown name is `:invalid_projection`.
+    * `:row_groups` — zero-based indexes. An index past the footer is
+      `:invalid_argument`. Omitted means every row group.
+    * `:batch_size` — a positive integer. The default is 8192.
+
+  One native call decodes a whole encoding unit. Elixir slices it to
+  `batch_size`. These fixtures are smaller than one unit. Without the native
+  decoder this returns `:native_unavailable` and does not read the payload.
   """
-  @spec read(F3.File.t(), keyword()) :: {:error, F3.Error.t()}
-  def read(file, opts \\ [])
-
-  def read(file, opts) when is_list(opts), do: unimplemented(file, :read)
-
-  def read(_file, _opts) do
-    {:error, F3.Error.invalid_argument(:read, "options must be a keyword list")}
-  end
+  @spec read(F3.File.t(), keyword()) :: {:ok, [F3.Batch.t()]} | {:error, F3.Error.t()}
+  def read(file, opts \\ []), do: F3.Reader.read(file, opts)
 
   @doc """
-  Streaming read. Not implemented.
+  Lazy columnar batches.
 
-  The function returns as soon as the handle is checked. It does not read
-  bytes and it does not return a stream.
+  The stream does not pread until the first pull. `Enum.take/2` stops further
+  reads. The caller still owns `close/1`. Options match `read/2`. A pull that
+  cannot decode throws `{:f3, %F3.Error{}}`.
   """
-  @spec stream(F3.File.t(), keyword()) :: {:error, F3.Error.t()}
-  def stream(file, opts \\ [])
-
-  def stream(file, opts) when is_list(opts), do: unimplemented(file, :stream)
-
-  def stream(_file, _opts) do
-    {:error, F3.Error.invalid_argument(:stream, "options must be a keyword list")}
-  end
+  @spec stream(F3.File.t(), keyword()) :: {:ok, Enumerable.t()} | {:error, F3.Error.t()}
+  def stream(file, opts \\ []), do: F3.Reader.stream(file, opts)
 
   @doc """
   Textual inspection of a file.
@@ -169,12 +168,6 @@ defmodule F3 do
 
   def inspect(_file, _opts) do
     {:error, F3.Error.invalid_argument(:inspect, "options must be a keyword list")}
-  end
-
-  defp unimplemented(file, operation) do
-    with {:ok, _file} <- ensure_open(file, operation) do
-      {:error, F3.Error.not_implemented(operation)}
-    end
   end
 
   defp load_metadata(file, opts, operation, allowed) do

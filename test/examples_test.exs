@@ -45,8 +45,18 @@ defmodule F3.ExamplesTest do
     assert output =~ "price float64"
     assert output =~ "row_groups: 1"
     assert output =~ "rows: 3"
-    assert output =~ "read: not implemented"
+    assert output =~ "read: native decoder is not loaded"
     assert output =~ "after close: closed"
+  end
+
+  test "tutorial 4 example reports a missing decoder or a projected batch" do
+    output =
+      capture_io(fn ->
+        Code.eval_file("examples/tutorial_04.exs")
+      end)
+
+    assert output =~ "command: mix run examples/tutorial_04.exs"
+    assert output =~ "stream: native decoder is not loaded"
   end
 
   test "mix f3.inspect prints the compact summary" do

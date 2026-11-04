@@ -26,6 +26,7 @@ defmodule F3.Error do
           | :resource_limit
           | :invalid_type
           | :native_unavailable
+          | :corrupt
 
   @type t :: %__MODULE__{
           reason: atom(),
@@ -156,6 +157,49 @@ defmodule F3.Error do
   def unsupported_encoding(operation, message, context \\ %{})
       when is_atom(operation) and is_binary(message) and is_map(context) do
     build(:unsupported_encoding, :unsupported_encoding, operation, message, context)
+  end
+
+  @doc """
+  A projected name is not a top-level field.
+  """
+  @spec invalid_projection(atom(), String.t()) :: t()
+  def invalid_projection(operation, name)
+      when is_atom(operation) and is_binary(name) do
+    build(:invalid_projection, :invalid_projection, operation, "unknown column #{name}", %{
+      column: name
+    })
+  end
+
+  @doc """
+  A chunk checksum was present and did not match the bytes.
+  """
+  @spec checksum(atom(), String.t()) :: t()
+  def checksum(operation, message)
+      when is_atom(operation) and is_binary(message) do
+    build(:checksum, :checksum, operation, message, %{})
+  end
+
+  @doc """
+  Row decoding needs the native library and this build does not have it.
+  """
+  @spec native_unavailable(atom()) :: t()
+  def native_unavailable(operation) when is_atom(operation) do
+    build(
+      :native_unavailable,
+      :native_unavailable,
+      operation,
+      "native decoder is not loaded",
+      %{}
+    )
+  end
+
+  @doc """
+  An encoding unit could not be decoded. The message does not include file bytes.
+  """
+  @spec corrupt(atom(), String.t()) :: t()
+  def corrupt(operation, message)
+      when is_atom(operation) and is_binary(message) do
+    build(:corrupt, :corrupt, operation, message, %{})
   end
 
   @doc """

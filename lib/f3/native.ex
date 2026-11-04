@@ -1,11 +1,13 @@
 defmodule F3.Native do
   @moduledoc """
-  Optional stable-Rust scaffold.
+  Optional native decoder.
 
   The NIF is compiled only when `F3_BUILD_NATIVE=1` is set in the environment
-  at compile time and the `rustler` dependency is available. The loaded
-  function reports the crate name and version. It does not open files, decode
-  FlatBuffers, or run WebAssembly.
+  at compile time and the `rustler` dependency is available. `info/0` reports
+  the crate name and version. `decode_encunit/3` decodes one CASCADE encoding
+  unit on the dirty CPU scheduler. It does not open files, decode FlatBuffers,
+  or run WebAssembly. The crate does not link `fff-poc` and does not install
+  a global allocator.
 
   `available?/0` is false in the default build, which does not invoke `cargo`.
   Mix reads `F3_BUILD_NATIVE` while compiling this module. After changing the
@@ -55,10 +57,53 @@ defmodule F3.Native do
     @spec nif_info() :: {String.t(), String.t()}
     def nif_info, do: :erlang.nif_error(:nif_not_loaded)
 
+    @doc """
+    Decodes one encoding unit. Returns `{:ok, {kind, rows, values, validity}}`
+    or `{:error, message}`. Panics become `{:error, "panic"}`.
+    """
+    @spec decode_encunit(binary(), atom(), atom()) ::
+            {:ok, {atom(), non_neg_integer(), term(), binary() | nil}}
+            | {:error, String.t()}
+    def decode_encunit(_bytes, _compression, _type), do: :erlang.nif_error(:nif_not_loaded)
+
     defp load_info do
       {:ok, nif_info()}
     rescue
       ErlangError -> {:error, :native_unavailable}
+    end
+
+    @doc false
+    @spec require_decoder(atom()) :: {:ok, module()} | {:error, F3.Error.t()}
+    def require_decoder(operation) do
+      if available?() do
+        {:ok, F3.Decoder.Native}
+      else
+        {:error, F3.Error.native_unavailable(operation)}
+      end
+    end
+
+    @doc false
+    @spec apply_decode(binary(), atom(), atom()) :: {:ok, F3.Column.t()} | {:error, F3.Error.t()}
+    def apply_decode(bytes, compression, type) do
+      case decode_encunit(bytes, compression, type) do
+        {:ok, {kind, rows, values, validity}} ->
+          F3.Column.from_native(kind, rows, values, validity)
+
+        {:error, "panic"} ->
+          {:error, F3.Error.corrupt(:decode, "encunit decode panicked")}
+
+        {:error, "unknown compression"} ->
+          {:error, F3.Error.unsupported_encoding(:decode, "unknown compression")}
+
+        {:error, "unknown arrow type"} ->
+          {:error, F3.Error.unsupported_encoding(:decode, "unknown arrow type")}
+
+        {:error, message} when is_binary(message) ->
+          {:error, F3.Error.corrupt(:decode, message)}
+
+        _other ->
+          {:error, F3.Error.corrupt(:decode, "native decoder returned an unexpected term")}
+      end
     end
   else
     @doc """
@@ -66,5 +111,23 @@ defmodule F3.Native do
     """
     @spec info() :: {:ok, {String.t(), String.t()}} | {:error, :native_unavailable}
     def info, do: {:error, :native_unavailable}
+
+    @doc false
+    @spec require_decoder(atom()) :: {:error, F3.Error.t()}
+    def require_decoder(operation), do: {:error, F3.Error.native_unavailable(operation)}
+
+    @doc false
+    @spec apply_decode(binary(), atom(), atom()) :: {:error, F3.Error.t()}
+    def apply_decode(_bytes, _compression, _type) do
+      {:error, F3.Error.native_unavailable(:decode)}
+    end
+  end
+
+  if not @build_native do
+    @doc """
+    Decodes one encoding unit when the NIF was compiled.
+    """
+    @spec decode_encunit(binary(), atom(), atom()) :: {:error, :native_unavailable}
+    def decode_encunit(_bytes, _compression, _type), do: {:error, :native_unavailable}
   end
 end

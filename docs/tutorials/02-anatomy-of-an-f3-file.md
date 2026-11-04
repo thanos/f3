@@ -121,7 +121,7 @@ row_groups:
         encunit size=512 rows=3 encoding=cascade compression=uncompressed
 ```
 
-Each column has one cascade EncUnit. The `WASMBinaries` line is a pointer. The inspector does not read those 24 bytes. The checksums match the tail dump and are not recomputed. `F3.read/2` still returns `:not_implemented`.
+Each column has one cascade EncUnit. The `WASMBinaries` line is a pointer. The inspector does not read those 24 bytes. The checksums match the tail dump and are not recomputed. `F3.read/2` decodes these units when the native decoder is compiled. The default `mix test` build leaves that decoder unloaded.
 
 ## What is experimental?
 
@@ -129,7 +129,7 @@ The layout comes from `format/File.fbs` and `FileWriter::finish` at `bd92506447d
 
 ## Next
 
-Tutorial 3 opens this fixture from Elixir and prints the schema. Reading rows is still Stage 2.
+Tutorial 3 opens this fixture from Elixir and prints the schema and, when the native decoder is loaded, the rows.
 
 ## Sources
 
