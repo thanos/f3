@@ -101,4 +101,78 @@ defmodule F3.Error do
       context: Map.put(context, :operation, operation)
     }
   end
+
+  @doc """
+  The file ends before a required field.
+  """
+  @spec truncated(atom(), String.t(), map()) :: t()
+  def truncated(operation, message, context \\ %{})
+      when is_atom(operation) and is_binary(message) and is_map(context) do
+    build(:truncated, :truncated, operation, message, context)
+  end
+
+  @doc """
+  The last two bytes are not the F3 magic.
+  """
+  @spec invalid_magic(atom()) :: t()
+  def invalid_magic(operation) when is_atom(operation) do
+    build(
+      :invalid_magic,
+      :invalid_magic,
+      operation,
+      "file does not end with the F3 magic",
+      %{}
+    )
+  end
+
+  @doc """
+  The postscript version is outside the pinned pair.
+  """
+  @spec unsupported_version(atom(), non_neg_integer(), non_neg_integer()) :: t()
+  def unsupported_version(operation, major, minor)
+      when is_atom(operation) and is_integer(major) and is_integer(minor) do
+    build(
+      :unsupported_version,
+      :unsupported_version,
+      operation,
+      "unsupported F3 version #{major}.#{minor}",
+      %{major_version: major, minor_version: minor}
+    )
+  end
+
+  @doc """
+  A size, offset, or FlatBuffers field does not describe this file.
+  """
+  @spec corrupt_metadata(atom(), String.t(), map()) :: t()
+  def corrupt_metadata(operation, message, context \\ %{})
+      when is_atom(operation) and is_binary(message) and is_map(context) do
+    build(:corrupt_metadata, :corrupt_metadata, operation, message, context)
+  end
+
+  @doc """
+  The file names an encoding this build will not decode.
+  """
+  @spec unsupported_encoding(atom(), String.t(), map()) :: t()
+  def unsupported_encoding(operation, message, context \\ %{})
+      when is_atom(operation) and is_binary(message) and is_map(context) do
+    build(:unsupported_encoding, :unsupported_encoding, operation, message, context)
+  end
+
+  @doc """
+  A size field is above the caller's allocation cap.
+  """
+  @spec resource_limit(atom(), String.t(), map()) :: t()
+  def resource_limit(operation, message, context \\ %{})
+      when is_atom(operation) and is_binary(message) and is_map(context) do
+    build(:resource_limit, :resource_limit, operation, message, context)
+  end
+
+  defp build(reason, category, operation, message, context) do
+    %__MODULE__{
+      reason: reason,
+      category: category,
+      message: message,
+      context: Map.put(context, :operation, operation)
+    }
+  end
 end

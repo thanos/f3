@@ -1,0 +1,130 @@
+{
+  "encoding_versions": [
+    {
+      "encoding": "custom_wasm",
+      "version": "1.0.0"
+    },
+    {
+      "encoding": "cascade",
+      "version": "0.21.0"
+    }
+  ],
+  "logical_tree": {
+    "children": [
+      {
+        "children": [],
+        "id": "flat"
+      },
+      {
+        "children": [],
+        "id": "flat"
+      }
+    ],
+    "id": "struct"
+  },
+  "optional_sections": [
+    {
+      "compression": "uncompressed",
+      "name": "WASMBinaries",
+      "offset": 3840,
+      "size": 24
+    }
+  ],
+  "postscript": {
+    "checksum_type": "xxhash",
+    "data_checksum": 1362591409165104609,
+    "footer_compression": "uncompressed",
+    "footer_size": 688,
+    "major_version": 0,
+    "metadata_size": 1016,
+    "minor_version": 1,
+    "schema_checksum": 8643724464714566334
+  },
+  "row_groups": [
+    {
+      "columns": [
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "encunit_indexes": [],
+                "kind": "local"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 4,
+                  "size": 1664,
+                  "wasm_id": null
+                },
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 4,
+                  "size": 704,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 4,
+              "offset": 0,
+              "size": 2368
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "checksum": null,
+              "dictionary": {
+                "encunit_indexes": [],
+                "kind": "local"
+              },
+              "encunits": [
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 2,
+                  "size": 768,
+                  "wasm_id": null
+                },
+                {
+                  "compression": "uncompressed",
+                  "encoding": "cascade",
+                  "num_rows": 4,
+                  "size": 704,
+                  "wasm_id": null
+                }
+              ],
+              "num_rows": 4,
+              "offset": 2368,
+              "size": 1472
+            }
+          ]
+        }
+      ],
+      "offset": 0,
+      "row_count": 4,
+      "size": 3840
+    }
+  ],
+  "schema": [
+    {
+      "name": "trade_id",
+      "nullable": false,
+      "type": "int64"
+    },
+    {
+      "name": "symbol",
+      "nullable": false,
+      "type": "utf8"
+    }
+  ],
+  "shared_dictionary": {
+    "chunks": [],
+    "positions": [],
+    "schema": [],
+    "schema_bytes": 48
+  }
+}

@@ -15,6 +15,8 @@ defmodule F3.MixProject do
       description: description(),
       package: package(),
       docs: docs(),
+      aliases: aliases(),
+      test_coverage: [summary: [threshold: 90]],
       name: "F3",
       homepage_url: @paper
     ]
@@ -26,10 +28,18 @@ defmodule F3.MixProject do
     ]
   end
 
+  def cli do
+    [
+      preferred_envs: [ci: :test]
+    ]
+  end
+
   defp deps do
     [
       {:rustler, "~> 0.38.0", optional: true},
-      {:ex_doc, "~> 0.38", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.38", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:mox, "~> 1.2", only: :test}
     ]
   end
 
@@ -62,6 +72,20 @@ defmodule F3.MixProject do
     ]
   end
 
+  defp aliases do
+    [
+      # Same checks as the required CI job. Mix stops the alias at the first
+      # non-zero step. ExUnit stops at the first failed test.
+      ci: [
+        "format --check-formatted",
+        "compile --warnings-as-errors",
+        "credo --strict",
+        "test --cover --max-failures 1",
+        "docs"
+      ]
+    ]
+  end
+
   defp docs do
     [
       main: "overview",
@@ -76,8 +100,11 @@ defmodule F3.MixProject do
         {"docs/tutorials/README.md", [filename: "tutorials", title: "Tutorials"]},
         {"docs/tutorials/01-why-f3.md", [title: "Why F3?"]},
         {"docs/tutorials/02-anatomy-of-an-f3-file.md", [title: "Anatomy of an F3 file"]},
+        {"docs/tutorials/03-your-first-f3-file-in-elixir.md",
+         [title: "Your first F3 file in Elixir"]},
         {"docs/tutorials/publication-plan.md", [title: "Publication plan"]},
-        {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]}
+        {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]},
+        {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]}
       ]
     ]
   end

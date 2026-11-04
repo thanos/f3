@@ -43,7 +43,7 @@ The footer points at column metadata. It is not a copy of every IOUnit header. T
 
 ## What the Elixir library is for
 
-The library is a separate project. It uses the module `F3` and, if it is ever published, the Hex name `f3`. On 2026-11-03 that Hex name was unused. The library pins one upstream commit and wire version 0.1. Opening a file only acquires a byte source. Asking for a schema, metadata, or rows returns `{:error, %F3.Error{category: :not_implemented}}`.
+The library is a separate project. It uses the module `F3` and, if it is ever published, the Hex name `f3`. On 2026-11-03 that Hex name was unused. The library pins one upstream commit and wire version 0.1. Opening a file acquires a byte source. Schema and footer metadata are decoded from the tail. Asking for rows returns `{:error, %F3.Error{category: :not_implemented}}`.
 
 From the repository root:
 

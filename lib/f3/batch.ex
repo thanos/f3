@@ -4,7 +4,7 @@ defmodule F3.Batch do
 
   `columns` is a map of column name to a columnar Elixir term. This is not
   a list of row maps. `to_rows/1` is the convenience adapter and is not
-  implemented. Stage 0 has no decoder, so `F3.read/2` does not produce batches.
+  implemented. No row decoder exists yet, so `F3.read/2` does not produce batches.
   """
 
   @type t :: %__MODULE__{

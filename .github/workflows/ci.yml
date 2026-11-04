@@ -28,10 +28,7 @@ jobs:
           elixir-version: "1.20.2"
           otp-version: "28"
       - run: mix deps.get
-      - run: mix format --check-formatted
-      - run: mix compile --warnings-as-errors
-      - run: mix test
-      - run: mix docs
+      - run: mix ci
 
   informational-native:
     name: informational native (${{ matrix.os }})
