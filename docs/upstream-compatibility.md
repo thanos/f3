@@ -18,9 +18,13 @@ Inspection time: 2026-11-03T00:44:04Z. `main` was `bd92506447dc1333820cfe9a34ebb
 
 `rust-toolchain.toml` selects `nightly-2025-02-24` and the extra targets `x86_64-unknown-linux-gnu` and `wasm32-wasip1`. It does not list `aarch64-apple-darwin`. On this machine rustup installed `nightly-2025-02-24-aarch64-apple-darwin` (rustc 1.87.0-nightly, 2025-02-23) because the host is Apple Silicon. Upstream does not claim that host.
 
-`fff-poc/src/lib.rs` enables `#![feature(new_range_api)]` and installs mimalloc as a global allocator. That combination is a reason not to link `fff-poc` into the BEAM. The Elixir package's optional NIF uses stable Rust and does not depend on `fff-poc`.
+`fff-poc/src/lib.rs` enables `#![feature(new_range_api)]` and installs mimalloc as a global allocator. That combination is a reason not to link `fff-poc` into the BEAM. `native/f3_native` does not depend on `fff-poc` and does not install a global allocator.
 
-Workspace crates.io pins used by the writer include Arrow and Parquet 53.0.0 and FlatBuffers 24.3.25. Vortex and Lance come from `https://github.com/XinyuZeng/vortex.git` revision `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a` and `https://github.com/XinyuZeng/lance.git` revision `ff922b192422d5a4da8f3384e0a019925f4f339f`. The only git submodule is `third_party/flatbuffers`, used to build `flatc`.
+The CASCADE decoder does not build on stable Rust. A stable 1.97.1 `cargo check` stops in `fastlanes` on `#![feature(generic_const_exprs)]`. `nightly-2025-02-24` (rustc 1.87.0-nightly) cannot compile this crate either: Rustler 0.38.0 declares `rust-version = "1.91"`, and a fresh crates.io resolve pulls `croaring` 2.9.0 (`rust-version` 1.95) plus `icu_*`, `gimli`, and `backtrace` crates that want 1.88. A current nightly (rustc 1.101.0-nightly, 2026-10-15) still accepts Vortex's feature gates, then fails in `vortex-fastlanes` because [rust#149127](https://github.com/rust-lang/rust/pull/149127) (merged 2025-11-21) changed `ArrayChunks::into_remainder` from `Option<array::IntoIter>` to `array::IntoIter`.
+
+`native/f3_native/rust-toolchain.toml` therefore pins `nightly-2025-11-15` (rustc 1.93.0-nightly, 2025-11-14). That nightly is after Rust 1.91 and before the `into_remainder` change. The crate also pins `chrono = "=0.4.39"` (0.4.45 adds `Datelike::quarter`, which collides with `arrow-arith` 53.3.0) and `croaring = "=2.1.0"` (the version in the upstream lock; 2.1.0 does not require Rust 1.95). On that toolchain the NIF decodes the first uncompressed int64 EncUnit of `small.f3` (offset 0, size 1664) to the values 1, 2, and 3. The loaded dylib is arm64 and exports neither `fff-poc` nor mimalloc.
+
+Workspace crates.io pins used by the writer include Arrow and Parquet 53.0.0 and FlatBuffers 24.3.25. The upstream `Cargo.lock` resolves `arrow-array` to 53.3.0; crates.io does not offer `arrow-buffer` 53.0.0 (53.3.0 and 53.4.1 are the selectable releases). `f3_native` pins `arrow-array = "=53.3.0"`. Vortex and Lance come from `https://github.com/XinyuZeng/vortex.git` revision `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a` and `https://github.com/XinyuZeng/lance.git` revision `ff922b192422d5a4da8f3384e0a019925f4f339f`. The only git submodule is `third_party/flatbuffers`, used to build `flatc`.
 
 A freestanding Cargo package that path-depends on `fff-poc` resolves those version ranges to newer crates that do not compile on this nightly. Fixture generation therefore builds inside the upstream workspace and its `Cargo.lock`.
 
@@ -67,7 +71,7 @@ Stage 0 claims the constants, the source lifecycle, and the fixtures produced by
 ## Risk register
 
 1. The FlatBuffers schema is explicitly unstable. A future upstream commit can invalidate fixtures and the version policy.
-2. `fff-poc` needs nightly Rust and a global allocator. Linking it into a NIF can abort the BEAM. Stage 2 must isolate decoding behind a narrow API on stable Rust, or keep nightly in a separate process. This stage does neither.
+2. `fff-poc` needs nightly Rust and a global allocator. The Stage 2 NIF does not link it. Vortex still needs nightly, so `f3_native` pins `nightly-2025-11-15` rather than stable or `nightly-2025-02-24`. See the toolchain section.
 3. Vortex and Lance are personal git forks, not crates.io releases. They can disappear or move.
 4. Upstream's stated test host is Intel Debian 12. Apple Silicon and Linux arm64 are untested by upstream. Fixture generation on this Apple Silicon machine is a local experiment, not an upstream support claim.
 5. `ChecksumType::from` panics on an unknown byte. A later parser must return an error before that path exists.

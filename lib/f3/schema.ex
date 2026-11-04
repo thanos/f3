@@ -7,7 +7,7 @@ defmodule F3.Schema do
   `{:list, field}` and `{:struct, fields}` carry their children. Any other
   Arrow type id is `{:unsupported, id}` and does not by itself reject the file.
 
-  Row values are not part of this struct. `F3.read/2` is still unimplemented.
+  Row values are not part of this struct. `F3.read/2` returns batches whose columns use these field names.
   """
 
   @type arrow_type ::

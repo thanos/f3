@@ -21,13 +21,22 @@ Upstream F3 is a research prototype. This library is experimental. Treat every `
 - FlatBuffers offsets are checked against the buffer. A cyclic offset hits the visit cap and returns `:corrupt_metadata`. Column-metadata slices must sit strictly before the footer, inside the metadata span. A pointer into the footer or the postscript is `:corrupt_metadata`.
 - Optional Wasm sections are names and file offsets. The bytes are not read, `lib_urls` is not fetched, and nothing is executed.
 - Error messages do not include file bytes. A corrupt-footer test checks that a column name from the file does not appear in the message.
-- `read/2` and `stream/2` still return before any payload scan.
+- Metadata inspection does not decode encoding units.
+
+## What Stage 2 enforces
+
+- `read/2` and `stream/2` return `:native_unavailable` when the NIF was not compiled. They do not scan payloads in that build.
+- The decoder NIF is `DirtyCpu`. It does not link `fff-poc` and it does not install a global allocator. A panic or a corrupt unit becomes `{:error, %F3.Error{}}`. It does not kill the caller.
+- Zstd and Lz4 are decompressed inside that NIF. The result is an owned Elixir term. Arrow buffers do not cross the boundary.
+- `CUSTOM_WASM` and a shared dictionary are `:unsupported_encoding`. The bytes are not read and not executed.
+- A chunk checksum is recomputed only when the footer stored one. The eight fixtures store none. Postscript checksums stay reported and unverified.
+- Error messages from the NIF are stripped of control characters and capped at 180 characters. They do not include the payload.
 
 ## What later stages must keep
 
 - Embedded Wasm stays off unless the caller opts in. A module URL in the file is data, not a download.
-- A NIF must not install a process-global allocator and must not run long decompression on a normal scheduler.
+- A NIF must not install a process-global allocator and must not run long decompression on a normal scheduler. The Stage 2 decoder stays on the dirty CPU scheduler.
 - Errors continue to omit payloads and secrets.
-- Checksums stay unverified until a stage that recomputes them says so.
+- Postscript checksums stay unverified. Chunk checksums are checked only when the footer field is present.
 
 Malformed-input tests cover a truncated tail, a bad magic, a bad version, sizes past the file, a size over the cap, an unknown checksum byte, a corrupt footer root, a corrupt vtable, and a corrupt column-metadata pointer. A fixed-seed corpus of random binaries must return `{:error, %F3.Error{}}`. This is not a fuzzer.

@@ -46,7 +46,8 @@ defmodule F3.MixProject do
   defp description do
     """
     Experimental Elixir library for the F3 columnar file format.
-    Reading and writing row data are not implemented. Upstream F3 is a research prototype.
+    Reading CASCADE row data needs the optional native decoder. Writing is not implemented.
+    Upstream F3 is a research prototype.
     """
   end
 
@@ -102,9 +103,12 @@ defmodule F3.MixProject do
         {"docs/tutorials/02-anatomy-of-an-f3-file.md", [title: "Anatomy of an F3 file"]},
         {"docs/tutorials/03-your-first-f3-file-in-elixir.md",
          [title: "Your first F3 file in Elixir"]},
+        {"docs/tutorials/04-streaming-and-column-projection.md",
+         [title: "Streaming and column projection"]},
         {"docs/tutorials/publication-plan.md", [title: "Publication plan"]},
         {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]},
-        {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]}
+        {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]},
+        {"docs/test-reports/stage-2.md", [title: "Stage 2 test report"]}
       ]
     ]
   end

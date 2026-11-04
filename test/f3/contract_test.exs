@@ -71,13 +71,14 @@ defmodule F3.ContractTest do
           {:stream, [file]},
           {:stream, [file, [batch_size: 8]]}
         ] do
-      assert {:error, %F3.Error{category: :not_implemented}} = apply(F3, fun, args)
+      assert {:error, %F3.Error{category: category}} = apply(F3, fun, args)
+      assert category in [:native_unavailable, :truncated]
     end
 
     assert {:error, %F3.Error{category: :invalid_argument}} = F3.read(file, :bad)
     assert {:error, %F3.Error{category: :invalid_argument}} = F3.stream(file, :bad)
     assert {:error, %F3.Error{category: :invalid_argument}} = F3.inspect(file, :bad)
-    assert {:error, %F3.Error{category: :not_implemented}} = F3.Batch.to_rows(%F3.Batch{})
+    assert {:ok, []} = F3.Batch.to_rows(%F3.Batch{})
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.open("out.f3")
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.write(:writer, [])
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.close(:writer)

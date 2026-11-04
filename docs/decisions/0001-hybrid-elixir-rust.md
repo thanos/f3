@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Stage 1 decoded the footer in Elixir. The eight committed fixtures match the upstream reader's metadata JSON, so the Rust FlatBuffers bridge was not added. Revisit if a later fixture disagrees, or when Stage 2 must keep Arrow buffers alive across the NIF boundary.
+Accepted. Stage 1 decoded the footer in Elixir. The eight committed fixtures match the upstream reader's metadata JSON, so the Rust FlatBuffers bridge was not added. Stage 2 decodes one CASCADE EncUnit in Rust and returns owned Elixir terms. Arrow buffers do not cross the NIF.
 
 ## Context
 
@@ -18,20 +18,22 @@ Elixir callers need `{:ok, value}` and `{:error, %F3.Error{}}`, explicit close, 
 
 ## Decision
 
-Elixir owns the public API, errors, source lifecycle, version policy, and the postscript. Stage 1 decodes the FlatBuffers footer with a bounded pure-Elixir walker checked against pinned `File.fbs` and the upstream reader. A small stable-Rust `flatbuffers` 24.3.25 bridge is the fallback only if those tests fail. `f3_native` is a version probe behind `F3_BUILD_NATIVE=1`. It does not decode.
+Elixir owns the public API, errors, source lifecycle, version policy, the postscript, and the footer. Stage 1 decodes the FlatBuffers footer with a bounded pure-Elixir walker checked against pinned `File.fbs` and the upstream reader. A small stable-Rust `flatbuffers` 24.3.25 bridge is the fallback only if those tests fail. It was not needed.
 
-Do not compile `fff-poc`, Vortex, or Wasmtime into `f3_native` for metadata.
+Stage 2 adds `decode_encunit/3` behind `F3_BUILD_NATIVE=1`. The crate depends on Vortex at `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a` and `arrow-array` 53.3.0. It does not depend on `fff-poc` and it does not install mimalloc. The function is scheduled `DirtyCpu`. Stable Rust cannot compile Vortex, and `nightly-2025-02-24` cannot compile Rustler 0.38, so this crate pins `nightly-2025-11-15`. See [../upstream-compatibility.md](../upstream-compatibility.md).
+
+Do not compile `fff-poc` or Wasmtime into `f3_native`.
 
 ## Consequences
 
 - `mix test` runs without Rust.
 - Postscript inspection cannot be broken by a NIF load failure.
 - Stage 1 walks vtables in Elixir with a depth cap and a visit cap. The fallback remains a small Rust parser, not a fork of `fff-poc`. It was not needed for the committed fixtures.
-- Stage 2 still needs a native decoder for Vortex and Wasm. That work starts from a new, narrow API, not from today's scaffold.
-- Wasm stays off. The scaffold has no interpreter.
+- Stage 2 decodes CASCADE units through that narrow NIF. Elixir projects, stitches nested columns, gathers a local dictionary, and slices batches.
+- Wasm stays off. The NIF has no interpreter. `CUSTOM_WASM` is refused.
 
 ## Revisit when
 
 - Stage 1 cannot match the upstream reader's metadata on the committed fixtures.
-- A NIF must own Arrow buffers, dirty schedulers, or cancellation.
+- A NIF must keep Arrow buffers alive, or cancellation has to cross the scheduler.
 - Upstream publishes a stable crate that builds on stable Rust without a global allocator.

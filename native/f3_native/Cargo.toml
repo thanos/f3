@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2021"
 license = "MIT"
 publish = false
-description = "Optional stable-Rust scaffold for the F3 Elixir library. It does not decode files."
+description = "Dirty-CPU decoder for one F3 CASCADE EncUnit. It does not link fff-poc and it does not install a global allocator."
 
 [lib]
 name = "f3_native"
@@ -13,3 +13,15 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rustler = "0.38.0"
+arrow-array = "=53.3.0"
+chrono = "=0.4.39"
+croaring = "=2.1.0"
+byteorder = "1.5"
+bytes = "1.7"
+lz4_flex = { version = "0.11", default-features = false }
+zstd = "0.13"
+vortex-array = { git = "https://github.com/XinyuZeng/vortex.git", rev = "c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a" }
+vortex-dtype = { git = "https://github.com/XinyuZeng/vortex.git", rev = "c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a" }
+vortex-error = { git = "https://github.com/XinyuZeng/vortex.git", rev = "c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a" }
+vortex-ipc = { git = "https://github.com/XinyuZeng/vortex.git", rev = "c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a" }
+vortex-sampling-compressor = { git = "https://github.com/XinyuZeng/vortex.git", rev = "c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a" }

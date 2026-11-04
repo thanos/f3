@@ -4,7 +4,7 @@ This library's version is independent of the upstream F3 wire version. Nothing h
 
 ## [0.0.1] - Unreleased
 
-Experimental scaffold. Schema and footer metadata are decoded. Row reading and writing are not implemented.
+Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads need the optional native decoder. Writing is not implemented.
 
 ### Added
 
@@ -20,4 +20,8 @@ Experimental scaffold. Schema and footer metadata are decoded. Row reading and w
 - Golden metadata JSON from the pinned upstream reader, under `test/fixtures/golden/`.
 - Draft tutorial 3. Tutorial 2 now includes the real inspect output of `small.f3`.
 - Credo, and `mix ci` for the required CI checks. The alias stops at the first failure and runs `mix test --cover` with a 90% threshold.
-- Mox doubles for `F3.IO.Source` and `F3.IO.FileSystem`, used to exercise read and close failures.
+- Mox doubles for `F3.IO.Source`, `F3.IO.FileSystem`, and `F3.Decoder`. The default suite covers projection, batching, and laziness without Rust.
+- `F3.read/2`, `F3.stream/2`, and `F3.Batch.to_rows/1`. One dirty-CPU NIF call decodes a CASCADE EncUnit. Elixir projects columns, selects row groups, stitches nested fields, gathers a local dictionary, and slices to `batch_size` (default 8192).
+- The NIF depends on Vortex `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a` and Arrow 53.3.0. It does not link `fff-poc` and it does not install a global allocator. The crate pins Rust `nightly-2025-11-15`.
+- Golden row JSON from one local run of the pinned reader, except `dictionary.f3`, which that reader rejects with `Incorrect type of indices`. The native test compares the other seven files to that JSON and all eight to the manifest.
+- Tutorials 3 and 4 are technically reviewed. Tutorial 4 covers streaming and projection. There is no benchmark table.

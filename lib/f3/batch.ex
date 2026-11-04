@@ -2,9 +2,9 @@ defmodule F3.Batch do
   @moduledoc """
   Columnar batch.
 
-  `columns` is a map of column name to a columnar Elixir term. This is not
-  a list of row maps. `to_rows/1` is the convenience adapter and is not
-  implemented. No row decoder exists yet, so `F3.read/2` does not produce batches.
+  `columns` maps a field name to an `F3.Column`. That is the storage form.
+  `to_rows/1` zips those columns into maps and is the convenience path for
+  a small result. A large file should keep the columns.
   """
 
   @type t :: %__MODULE__{
@@ -18,11 +18,25 @@ defmodule F3.Batch do
   @doc """
   Materializes a batch as row maps.
 
-  This returns `:not_implemented` until a reader can produce a real batch.
+  Keys are the logical field names. Nested values are maps and lists.
+  Nulls are `nil`.
   """
-  @spec to_rows(t()) :: {:error, F3.Error.t()}
-  def to_rows(%__MODULE__{}) do
-    {:error, F3.Error.not_implemented(:batch_to_rows)}
+  @spec to_rows(t()) :: {:ok, [map()]} | {:error, F3.Error.t()}
+  def to_rows(%__MODULE__{num_rows: 0}), do: {:ok, []}
+
+  def to_rows(%__MODULE__{schema: nil}) do
+    {:error, F3.Error.invalid_argument(:batch_to_rows, "batch has no schema")}
+  end
+
+  def to_rows(%__MODULE__{num_rows: rows, schema: schema, columns: columns}) do
+    materialized =
+      for index <- 0..(rows - 1)//1 do
+        Map.new(schema.fields, fn field ->
+          {field.name, F3.Column.value(Map.fetch!(columns, field.name), index)}
+        end)
+      end
+
+    {:ok, materialized}
   end
 
   def to_rows(_batch) do

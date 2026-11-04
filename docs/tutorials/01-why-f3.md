@@ -51,7 +51,7 @@ From the repository root:
 mix run examples/tutorial_01.exs
 ```
 
-The script prints the pinned wire version and states that reading and writing are not implemented. That is the whole public behavior of this stage.
+The script prints the pinned wire version. Writing is not implemented. Reading rows is implemented when the native decoder is compiled.
 
 ## Glossary
 
@@ -67,7 +67,7 @@ The script prints the pinned wire version and states that reading and writing ar
 
 ## What is experimental?
 
-Upstream F3 at `bd92506447dc1333820cfe9a34ebbf497fe0219e` is a research prototype. The schema file says the definition can change. The Elixir code in this repository does not decode a footer, does not read a column, and does not run Wasm. Wire versions other than 0.1 are rejected by a policy function, not yet by a parser. There are no Elixir performance numbers in this article.
+Upstream F3 at `bd92506447dc1333820cfe9a34ebbf497fe0219e` is a research prototype. The schema file says the definition can change. The Elixir code decodes the footer. When `F3_BUILD_NATIVE=1` it also decodes the CASCADE payloads in the committed fixtures. It does not run Wasm. Wire versions other than 0.1 are rejected. There are no Elixir performance numbers in this article.
 
 ## Next
 
