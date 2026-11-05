@@ -6,15 +6,16 @@ defmodule F3.Native do
   at compile time and the `rustler` dependency is available. `info/0` reports
   the crate name and version. `decode_encunit/3` decodes one CASCADE encoding
   unit on the dirty CPU scheduler. It does not open files, decode FlatBuffers,
-  or run WebAssembly.   The crate does not link `fff-poc` and does not install
+  or run WebAssembly. The crate does not link `fff-poc` and does not install
   a global allocator. Wasmtime 28 is in the same crate. It runs only when
   `decode_wasm/5` is called, which `F3.read/2` does only for `wasm: :sandbox`.
 
   `available?/0` is false in the default build, which does not invoke `cargo`.
-  Mix reads `F3_BUILD_NATIVE` while compiling this module. After changing the
-  flag, run `mix compile --force` so the previously compiled beam is replaced.
+  Mix recompiles this module when `F3_BUILD_NATIVE` changes. `mix test` and
+  `mix compile` both pick up the current value.
   """
 
+  @external_resource Path.expand("../../native/f3_native/.f3_build_native", __DIR__)
   @build_native System.get_env("F3_BUILD_NATIVE") == "1"
 
   if @build_native do
@@ -22,7 +23,34 @@ defmodule F3.Native do
       raise "F3_BUILD_NATIVE=1 requires the rustler dependency to be present"
     end
 
-    use Rustler, otp_app: :f3, crate: "f3_native"
+    # asdf and Homebrew both install a stable `cargo` that ignores
+    # rust-toolchain.toml. `rustup run` does not put its toolchain ahead of
+    # those shims, so Cargo would still spawn the stable `rustc`.
+    rustup =
+      System.find_executable("rustup") || Path.join(System.user_home!(), ".cargo/bin/rustup")
+
+    unless File.regular?(rustup) do
+      raise "F3_BUILD_NATIVE=1 requires rustup and the nightly-2025-11-15 toolchain"
+    end
+
+    {rustc_out, rustc_status} =
+      System.cmd(rustup, ["which", "--toolchain", "nightly-2025-11-15", "rustc"])
+
+    if rustc_status != 0 do
+      raise "install the pinned toolchain with: rustup toolchain install nightly-2025-11-15\n#{rustc_out}"
+    end
+
+    rustc = String.trim(rustc_out)
+    nightly_bin = Path.dirname(rustc)
+
+    use Rustler,
+      otp_app: :f3,
+      crate: "f3_native",
+      cargo: {:bin, Path.join(nightly_bin, "cargo")},
+      env: [
+        {"RUSTC", rustc},
+        {"PATH", nightly_bin <> ":" <> System.get_env("PATH", "")}
+      ]
   end
 
   if @build_native do

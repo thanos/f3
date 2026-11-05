@@ -6,6 +6,8 @@ defmodule F3.MixProject do
   @paper "https://doi.org/10.1145/3749163"
 
   def project do
+    stamp_native_flag()
+
     [
       app: :f3,
       version: @version,
@@ -32,6 +34,21 @@ defmodule F3.MixProject do
     [
       preferred_envs: [ci: :test]
     ]
+  end
+
+  # F3.Native reads F3_BUILD_NATIVE while it compiles. Mix only recompiles a
+  # module when a source or an @external_resource changes, so a later
+  # `mix test` would keep the previous beam. Rewriting this stamp when the
+  # flag changes invalidates that beam.
+  defp stamp_native_flag do
+    path = Path.join(__DIR__, "native/f3_native/.f3_build_native")
+    stamp = System.get_env("F3_BUILD_NATIVE") || "0"
+    previous = if File.regular?(path), do: File.read!(path), else: nil
+
+    if previous != stamp do
+      File.mkdir_p!(Path.dirname(path))
+      File.write!(path, stamp)
+    end
   end
 
   defp deps do

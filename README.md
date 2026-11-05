@@ -37,7 +37,7 @@ mix ci
 
 `mix ci` is the required CI job: format, compile with warnings as errors, Credo, tests with coverage, and docs. It stops at the first failing step. The test step stops at the first failed test and requires 90% line coverage.
 
-Set `F3_BUILD_NATIVE=1` before `mix compile` to build `native/f3_native`. That crate needs Rust `nightly-2025-11-15`. It decodes one CASCADE encoding unit on the dirty CPU scheduler and, only when Elixir asks, one Wasm module with Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Mix reads the flag while compiling `F3.Native`; change it with `mix compile --force`. `mix test --only native` is the conformance suite. The default `mix test` excludes it.
+`F3_BUILD_NATIVE=1 mix test --only native` builds `native/f3_native` and runs the conformance suite. The build calls rustup's `nightly-2025-11-15` binaries even when asdf or Homebrew puts a stable `cargo` earlier on `PATH`. It decodes one CASCADE encoding unit on the dirty CPU scheduler and, only when Elixir asks, one Wasm module with Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Mix recompiles `F3.Native` when the flag changes. The default `mix test` excludes the native tests and does not invoke `cargo`.
 
 Regenerate fixtures with `scripts/fixtures/generate.sh`. That script clones the pinned upstream commit, builds `fff-poc` with Rust `nightly-2025-02-24`, and rewrites `test/fixtures/`. It is not part of `mix test`.
 
