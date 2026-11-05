@@ -105,10 +105,13 @@ defmodule F3.MixProject do
          [title: "Your first F3 file in Elixir"]},
         {"docs/tutorials/04-streaming-and-column-projection.md",
          [title: "Streaming and column projection"]},
+        {"docs/tutorials/06-custom-encodings-and-wasm.md",
+         [title: "Taking the decoder with the data"]},
         {"docs/tutorials/publication-plan.md", [title: "Publication plan"]},
         {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]},
         {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]},
-        {"docs/test-reports/stage-2.md", [title: "Stage 2 test report"]}
+        {"docs/test-reports/stage-2.md", [title: "Stage 2 test report"]},
+        {"docs/test-reports/stage-3.md", [title: "Stage 3 test report"]}
       ]
     ]
   end

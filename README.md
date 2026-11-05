@@ -1,6 +1,6 @@
 # F3 for Elixir
 
-Experimental library for the [F3](https://github.com/future-file-format/F3) columnar file format. Upstream F3 is a research prototype. This package reads the postscript, the footer, and, when the native decoder is compiled, CASCADE row data. It does not write files and it does not execute Wasm.
+Experimental library for the [F3](https://github.com/future-file-format/F3) columnar file format. Upstream F3 is a research prototype. This package reads the postscript, the footer, and, when the native decoder is compiled, CASCADE row data. `CUSTOM_WASM` runs only when a read passes `wasm: :sandbox`. It does not write files.
 
 The pinned upstream commit is `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The only wire version this build accepts is major 0, minor 1. See [docs/upstream-compatibility.md](docs/upstream-compatibility.md).
 
@@ -17,7 +17,7 @@ The pinned upstream commit is `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The on
 {:ok, file} = F3.close(file)
 ```
 
-`mix f3.inspect test/fixtures/small.f3` prints the same summary. Checksums are shown and not verified. A Wasm section is a pointer. The bytes are not read.
+`mix f3.inspect test/fixtures/small.f3` prints the same summary. Checksums are shown and not verified. A Wasm section is a pointer until a read passes `wasm: :sandbox`. Inspection does not execute it.
 
 A memory source does not touch the path:
 
@@ -37,7 +37,7 @@ mix ci
 
 `mix ci` is the required CI job: format, compile with warnings as errors, Credo, tests with coverage, and docs. It stops at the first failing step. The test step stops at the first failed test and requires 90% line coverage.
 
-Set `F3_BUILD_NATIVE=1` before `mix compile` to build `native/f3_native`. That crate needs Rust `nightly-2025-11-15`. It decodes one CASCADE encoding unit on the dirty CPU scheduler. It does not link `fff-poc` and it does not install a global allocator. Mix reads the flag while compiling `F3.Native`; change it with `mix compile --force`. `mix test --only native` is the conformance suite. The default `mix test` excludes it.
+Set `F3_BUILD_NATIVE=1` before `mix compile` to build `native/f3_native`. That crate needs Rust `nightly-2025-11-15`. It decodes one CASCADE encoding unit on the dirty CPU scheduler and, only when Elixir asks, one Wasm module with Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Mix reads the flag while compiling `F3.Native`; change it with `mix compile --force`. `mix test --only native` is the conformance suite. The default `mix test` excludes it.
 
 Regenerate fixtures with `scripts/fixtures/generate.sh`. That script clones the pinned upstream commit, builds `fff-poc` with Rust `nightly-2025-02-24`, and rewrites `test/fixtures/`. It is not part of `mix test`.
 

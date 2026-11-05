@@ -59,6 +59,19 @@ defmodule F3.ExamplesTest do
     assert output =~ "stream: native decoder is not loaded"
   end
 
+  test "tutorial 6 keeps wasm off unless the native sandbox is compiled" do
+    output =
+      capture_io(fn ->
+        Code.eval_file("examples/tutorial_06.exs")
+      end)
+
+    assert output =~ "command: mix run examples/tutorial_06.exs"
+    assert output =~ "wasm: off"
+    assert output =~ "extension rows:"
+    assert output =~ "trade_id"
+    assert output =~ "wasm: sandbox needs the native decoder"
+  end
+
   test "mix f3.inspect prints the compact summary" do
     output =
       capture_io(fn ->

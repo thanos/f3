@@ -25,3 +25,7 @@ Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads
 - The NIF depends on Vortex `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a` and Arrow 53.3.0. It does not link `fff-poc` and it does not install a global allocator. The crate pins Rust `nightly-2025-11-15`.
 - Golden row JSON from one local run of the pinned reader, except `dictionary.f3`, which that reader rejects with `Incorrect type of indices`. The native test compares the other seven files to that JSON and all eight to the manifest.
 - Tutorials 3 and 4 are technically reviewed. Tutorial 4 covers streaming and projection. There is no benchmark table.
+- Opt-in Wasmtime 28 host for `decode_general_ffi`, major ABI 1 only, with module, memory, and fuel caps. `wasm: :off` does not read the `WASMBinaries` section. `lib_urls` are not fetched.
+- `F3.Extension` and `F3.Registry`. An extension match does not fall through into Wasm. Registries are not shared unless the caller passes the same pid.
+- `test/fixtures/custom_wasm.f3` from the pinned writer after building `fff-ude-example-fff` for `wasm32-wasip1`. `small.f3` stays on the Vortex NIF.
+- Tutorial 6 is technically reviewed. The default script path leaves Wasm off.

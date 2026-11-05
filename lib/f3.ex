@@ -125,6 +125,12 @@ defmodule F3 do
     * `:row_groups` — zero-based indexes. An index past the footer is
       `:invalid_argument`. Omitted means every row group.
     * `:batch_size` — a positive integer. The default is 8192.
+    * `:wasm` — `:off` (default) or `:sandbox`. `:off` returns
+      `:unsupported_encoding` for `CUSTOM_WASM` and does not read the module.
+      `:sandbox` runs that module inside the fuel and memory caps.
+    * `:extensions` — pid from `F3.Registry.start_link/1`. A matching Elixir
+      extension runs instead of Wasm. Registries are not shared by default.
+    * `:wasm_module_bytes` — module size cap. Default 1 MiB. Hard ceiling 16 MiB.
 
   One native call decodes a whole encoding unit. Elixir slices it to
   `batch_size`. These fixtures are smaller than one unit. Without the native

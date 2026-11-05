@@ -1,6 +1,6 @@
 # Architecture
 
-The library owns the byte-source lifecycle, the postscript, the footer, and the public read API. Rust decodes one CASCADE encoding unit at a time and returns owned Elixir terms. Arrow buffers do not cross the NIF. Wasm is not executed.
+The library owns the byte-source lifecycle, the postscript, the footer, and the public read API. Rust decodes one CASCADE encoding unit at a time and returns owned Elixir terms. Arrow buffers do not cross the NIF. Wasm runs only when a read passes `wasm: :sandbox`.
 
 ```mermaid
 flowchart LR
@@ -22,13 +22,13 @@ flowchart LR
 
 `F3.Batch` stores columns keyed by logical field name. `to_rows/1` zips them into maps and is the convenience path. `F3.Writer` returns `:not_implemented` and creates no file.
 
-`F3.Reader` selects columns and row groups, checks a chunk checksum when the footer stored one, and slices a decoded unit to `batch_size` (default 8192). `F3.Logical` stitches unnamed physical columns into the logical tree. `F3.Native` is compiled only when `F3_BUILD_NATIVE=1`. `decode_encunit/3` runs on the dirty CPU scheduler. The crate calls Vortex and Arrow. It does not link `fff-poc`, it does not install a global allocator, and it does not run Wasm. Without the NIF, `read/2` and `stream/2` return `:native_unavailable`. Metadata inspection still works.
+`F3.Reader` selects columns and row groups, checks a chunk checksum when the footer stored one, and slices a decoded unit to `batch_size` (default 8192). `F3.Logical` stitches unnamed physical columns into the logical tree. `F3.Native` is compiled only when `F3_BUILD_NATIVE=1`. `decode_encunit/3` and `decode_wasm/5` run on the dirty CPU scheduler. The crate calls Vortex, Arrow, and Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Without the NIF, a CASCADE read returns `:native_unavailable`. A `CUSTOM_WASM` read with `wasm: :off` returns `:unsupported_encoding` without the NIF. Metadata inspection still does not execute a module.
 
 There is no `Application` callback, no supervision tree, and no process registry. See [decisions/0001-hybrid-elixir-rust.md](decisions/0001-hybrid-elixir-rust.md).
 
-## What Stage 3 must keep off
+## What Stage 4 must keep off
 
-Wasm execution. A `CUSTOM_WASM` unit is `:unsupported_encoding`. The bytes are not read and not run. A shared dictionary is the same refusal. A local dictionary is gathered in Elixir after the NIF returns the values and the indexes.
+A writer. Wasm stays opt-in. A shared dictionary is still `:unsupported_encoding`. A local dictionary is gathered in Elixir after the NIF returns the values and the indexes. `lib_urls` stay unread.
 
 ## Fixture path
 

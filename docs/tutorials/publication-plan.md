@@ -16,7 +16,7 @@ Nothing in this file is scheduled, submitted, or posted. It is a backlog for a p
 | 8 | Building a safe binary-file reader on the BEAM | Bounds, NIFs, and a bug that the tests still catch | elixir, rustler |
 | 9 | Performance, compatibility, and what remains experimental | Numbers only from a recorded run | elixir, benchmarks |
 
-Articles 1–4 exist as technically reviewed drafts. Articles 5–9 have no files.
+Articles 1–4 and 6 exist as technically reviewed drafts. Articles 5 and 7–9 have no files. Nothing here is scheduled.
 
 ## Canonical links
 

@@ -51,7 +51,7 @@ The eight fixtures fit in one encoding unit each. They do not show how a multi-u
 
 ## Next
 
-Tutorial 5 is writing, and it is not implemented. Tutorial 6 is Wasm, and execution stays off.
+Tutorial 5 is writing, and it is not implemented. Tutorial 6 is Wasm. It stays off unless the caller passes `wasm: :sandbox`.
 
 ## Sources
 

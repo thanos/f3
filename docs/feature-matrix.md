@@ -23,7 +23,7 @@ The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/sta
 | Postscript checksum | reported, not verified | both u64 fields are stored |
 | Chunk checksum | implemented when the footer field is present | XXH64 seed 0. The eight fixtures store none |
 | `CASCADE` / Vortex decode | implemented when `F3_BUILD_NATIVE=1` | dirty CPU NIF. Does not link `fff-poc` |
-| `CUSTOM_WASM` decode or execution | refused | `:unsupported_encoding`. Bytes are not read and not executed |
+| `CUSTOM_WASM` decode or execution | opt-in | Default `:off` is `:unsupported_encoding` and does not read the section. `wasm: :sandbox` runs Wasmtime 28 when `F3_BUILD_NATIVE=1`. `custom_wasm.f3` matches the manifest rows |
 | Shared dictionary | refused | `:unsupported_encoding` |
 | Local dictionary, Zstd, Lz4, nested types | implemented when `F3_BUILD_NATIVE=1` | round-trip of `dictionary.f3`, `compressed_zstd.f3`, `compressed_lz4.f3`, and `nested.f3` |
 | Bool and plain binary values | untested | not present in the eight fixtures |

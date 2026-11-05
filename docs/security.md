@@ -28,9 +28,17 @@ Upstream F3 is a research prototype. This library is experimental. Treat every `
 - `read/2` and `stream/2` return `:native_unavailable` when the NIF was not compiled. They do not scan payloads in that build.
 - The decoder NIF is `DirtyCpu`. It does not link `fff-poc` and it does not install a global allocator. A panic or a corrupt unit becomes `{:error, %F3.Error{}}`. It does not kill the caller.
 - Zstd and Lz4 are decompressed inside that NIF. The result is an owned Elixir term. Arrow buffers do not cross the boundary.
-- `CUSTOM_WASM` and a shared dictionary are `:unsupported_encoding`. The bytes are not read and not executed.
+- `CUSTOM_WASM` is `:unsupported_encoding` unless the caller passes `wasm: :sandbox` or a matching extension. A shared dictionary is `:unsupported_encoding`.
 - A chunk checksum is recomputed only when the footer stored one. The eight fixtures store none. Postscript checksums stay reported and unverified.
 - Error messages from the NIF are stripped of control characters and capped at 180 characters. They do not include the payload.
+
+## What Stage 3 enforces
+
+- `wasm:` defaults to `:off`. `CUSTOM_WASM` is `:unsupported_encoding`. The `WASMBinaries` section is not read. Metadata inspection never compiles a module.
+- `:sandbox` is the only other accepted value. The host is Wasmtime 28 on the dirty CPU scheduler. A module is at most 1 MiB unless `wasm_module_bytes:` raises it, and never above 16 MiB. The pinned built-in module is 10_661_135 bytes, which is why the ceiling is 16 MiB rather than 8 MiB. Linear memory is at most 8 MiB. Fuel is 5_000_000 instructions. Upstream sets no fuel. Exhaustion is `:resource_limit`. An omitted `wasm_id` is the FlatBuffers default 0.
+- WASI stdout and stderr are sinks. There is no preopened directory and the process environment is not inherited. `path_open` and socket imports are refused before instantiation.
+- `lib_urls` are not parsed and not fetched. No HTTP client is on the read path.
+- A registered `F3.Extension` is this library's policy. An error from it is returned as-is and does not fall through into Wasm.
 
 ## What later stages must keep
 

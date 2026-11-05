@@ -62,6 +62,71 @@ defmodule F3.NativeTest do
     assert [%F3.Batch{num_rows: 2}] = Enum.take(stream, 1)
   end
 
+  test "sandboxed custom_wasm matches the manifest and does not fetch lib urls" do
+    manifest = File.read!("test/fixtures/manifest.json") |> :json.decode()
+    entry = Enum.find(manifest["fixtures"], &(&1["name"] == "custom_wasm.f3"))
+    {:ok, file} = F3.open("test/fixtures/custom_wasm.f3")
+
+    assert {:error, %F3.Error{category: :unsupported_encoding}} = F3.read(file)
+
+    :erlang.trace(self(), true, [:call])
+    :erlang.trace_pattern({:httpc, :_, :_}, true, [:local])
+
+    assert {:ok, batches} =
+             F3.read(file, wasm: :sandbox, wasm_module_bytes: F3.Wasm.max_module_bytes())
+
+    :erlang.trace(self(), false, [:call])
+    refute_received {:trace, _, :call, {:httpc, _, _}}
+
+    rows =
+      Enum.flat_map(batches, fn batch ->
+        {:ok, rows} = F3.Batch.to_rows(batch)
+        rows
+      end)
+
+    assert rows == manifest_rows(entry)
+    golden = "test/fixtures/golden/custom_wasm_rows.json"
+
+    if File.exists?(golden) do
+      assert rows == golden |> File.read!() |> :json.decode() |> nulls_to_nil()
+    end
+
+    assert {:ok, stream} =
+             F3.stream(file, wasm: :sandbox, wasm_module_bytes: F3.Wasm.max_module_bytes())
+
+    assert [%F3.Batch{num_rows: 3}] = Enum.to_list(stream)
+    assert :ok = F3.Native.clear_wasm_cache()
+  end
+
+  test "the wasm host rejects a bad module without killing the caller" do
+    {:ok, ok} = F3.Native.wasm_sample("ok_i64")
+    assert {:ok, column} = F3.Native.apply_wasm(ok, <<>>, :uncompressed, :i64, 3, :decode)
+    assert F3.Column.value(column, 0) == 1
+    assert F3.Column.value(column, 2) == 3
+    assert :ok = F3.Native.invalidate_wasm(ok)
+
+    for {name, category, message} <- [
+          {"short", :corrupt, "output length"},
+          {"fuel", :resource_limit, "wasm fuel is exhausted"},
+          {"memory", :resource_limit, "wasm memory limit"},
+          {"grow", :resource_limit, "wasm memory limit"},
+          {"import", :corrupt, "wasm import"},
+          {"socket", :corrupt, "wasm import"},
+          {"abi", :corrupt, "bad abi"},
+          {"major", :corrupt, "bad abi"}
+        ] do
+      {:ok, bytes} = F3.Native.wasm_sample(name)
+
+      assert {:error, %F3.Error{category: ^category, message: ^message}} =
+               F3.Native.apply_wasm(bytes, <<>>, :uncompressed, :i64, 3, :decode)
+    end
+
+    assert {:error, "wasm module"} =
+             F3.Native.decode_wasm(<<0, 97, 115, 109>>, <<>>, :uncompressed, :i64, 1)
+
+    assert Process.alive?(self())
+  end
+
   test "a corrupt encoding unit is a tagged error and the caller stays alive" do
     assert {:error, message} = F3.Native.decode_encunit(<<0, 0, 0, 0>>, :uncompressed, :i64)
     assert is_binary(message)

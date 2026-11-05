@@ -9,7 +9,7 @@ Nine articles are planned. Stage 0 writes the first two and leaves the rest as a
 | 3 | Your first F3 file in Elixir | technically reviewed | [03-your-first-f3-file-in-elixir.md](03-your-first-f3-file-in-elixir.md) |
 | 4 | Streaming and column projection | technically reviewed | [04-streaming-and-column-projection.md](04-streaming-and-column-projection.md) |
 | 5 | Writing F3 from Elixir | backlog | none until Stage 4 |
-| 6 | Taking the decoder with the data | backlog | none until Stage 3 |
+| 6 | Taking the decoder with the data | technically reviewed | [06-custom-encodings-and-wasm.md](06-custom-encodings-and-wasm.md) |
 | 7 | F3, Apache Arrow, and Parquet | backlog | none until Stage 5 |
 | 8 | Building a safe binary-file reader on the BEAM | backlog | none until Stage 5 |
 | 9 | Performance, compatibility, and what remains experimental | backlog | none until Stage 5 |
@@ -34,7 +34,7 @@ Articles 1 and 2 need no Elixir beyond `mix run` from this repository. They do n
 
 ## Publication checklist
 
-- Commands in articles 1–4 match `examples/tutorial_01.exs` through `examples/tutorial_04.exs`. `test/examples_test.exs` runs all four.
+- Commands in articles 1–4 and 6 match `examples/tutorial_01.exs` through `examples/tutorial_04.exs` and `examples/tutorial_06.exs`. `test/examples_test.exs` runs them.
 - Numbers in the hex dump come from the script. The fixture SHA-256 is in `test/fixtures/manifest.json`.
 - Paper sentences about Wasm size and Wasm-versus-native speed stay attributed to the paper.
 - Articles 3 and 4 say row reads need the native decoder. They do not claim Wasm execution or a writer.
