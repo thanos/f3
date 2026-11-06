@@ -64,7 +64,7 @@ schema_checksum: 0xA2D956A3E70080C2
 after close: closed
 ```
 
-That `read:` block is the output of `F3_BUILD_NATIVE=1 mix run examples/tutorial_03.exs` on this machine. A build without the native decoder prints `read: native decoder is not loaded` instead, and the rest of the script is the same. The checksums are displayed, not verified.
+That `read:` block is the output of `F3_BUILD_NATIVE=1 mix run examples/tutorial_03.exs` on this machine. A build without the native decoder prints `read: native decoder is not loaded` instead, and the rest of the script is the same. The same script then tries a one-row write. The default build prints `write: native writer is not loaded` and creates no file. The checksums are displayed, not verified.
 
 `max_metadata_bytes:` on `schema/1`, `metadata/1`, and `inspect/2` caps the sizes in the tail. The default is 16 MiB. A larger claim returns `:resource_limit` and does not allocate that buffer.
 
@@ -85,7 +85,7 @@ Upstream F3 at `bd92506447dc1333820cfe9a34ebbf497fe0219e` is a research prototyp
 
 ## Next
 
-Tutorial 4 streams a file and projects columns. `to_rows/1` stays the convenience path.
+Tutorial 4 streams a file and projects columns. `to_rows/1` stays the convenience path. Tutorial 5 writes a local file and reads it back.
 
 ## Sources
 

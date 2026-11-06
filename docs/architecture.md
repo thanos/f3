@@ -20,15 +20,15 @@ flowchart LR
 
 `F3.FlatBuffer` walks one buffer: root offset, vtable, scalars, strings, vectors, and unions. Offsets are checked against the buffer length. Depth and the number of visited tables are capped. `F3.Footer` turns the footer and the out-of-band column-metadata roots into `F3.Schema`, `F3.Metadata`, and `F3.RowGroup`. Arrow types the fixtures do not use become `{:unsupported, id}` and do not fail the file. Wasm section offsets are recorded and the bytes are not read. Checksums are recorded and not verified.
 
-`F3.Batch` stores columns keyed by logical field name. `to_rows/1` zips them into maps and is the convenience path. `F3.Writer` returns `:not_implemented` and creates no file.
+`F3.Batch` stores columns keyed by logical field name. `to_rows/1` zips them into maps and is the convenience path. `F3.Writer` checks arguments in Elixir, then streams batches to an out-of-process `f3_write` helper. The helper is `fff-poc`'s `FileWriter` on `nightly-2025-02-24`. `close/1` renames a temp file in the destination directory onto the path. That rename is local-filesystem behavior. Without `F3_BUILD_NATIVE=1`, a valid `open/2` returns `:not_implemented` and creates nothing.
 
 `F3.Reader` selects columns and row groups, checks a chunk checksum when the footer stored one, and slices a decoded unit to `batch_size` (default 8192). `F3.Logical` stitches unnamed physical columns into the logical tree. `F3.Native` is compiled only when `F3_BUILD_NATIVE=1`. `decode_encunit/3` and `decode_wasm/5` run on the dirty CPU scheduler. The crate calls Vortex, Arrow, and Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Without the NIF, a CASCADE read returns `:native_unavailable`. A `CUSTOM_WASM` read with `wasm: :off` returns `:unsupported_encoding` without the NIF. Metadata inspection still does not execute a module.
 
 There is no `Application` callback, no supervision tree, and no process registry. See [decisions/0001-hybrid-elixir-rust.md](decisions/0001-hybrid-elixir-rust.md).
 
-## What Stage 4 must keep off
+## What stays off
 
-A writer. Wasm stays opt-in. A shared dictionary is still `:unsupported_encoding`. A local dictionary is gathered in Elixir after the NIF returns the values and the indexes. `lib_urls` stay unread.
+Wasm stays opt-in. A shared dictionary is still `:unsupported_encoding`. A local dictionary is gathered in Elixir after the NIF returns the values and the indexes. `lib_urls` stay unread. The writer does not embed Wasm.
 
 ## Fixture path
 

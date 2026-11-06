@@ -7,6 +7,7 @@ defmodule F3.MixProject do
 
   def project do
     stamp_native_flag()
+    install_writer()
 
     [
       app: :f3,
@@ -40,6 +41,13 @@ defmodule F3.MixProject do
   # module when a source or an @external_resource changes, so a later
   # `mix test` would keep the previous beam. Rewriting this stamp when the
   # flag changes invalidates that beam.
+  defp install_writer do
+    if System.get_env("F3_BUILD_NATIVE") == "1" do
+      Code.compile_file(Path.join(__DIR__, "native/f3_write/build.ex"))
+      F3.Writer.Build.install!()
+    end
+  end
+
   defp stamp_native_flag do
     path = Path.join(__DIR__, "native/f3_native/.f3_build_native")
     stamp = System.get_env("F3_BUILD_NATIVE") || "0"
@@ -63,7 +71,7 @@ defmodule F3.MixProject do
   defp description do
     """
     Experimental Elixir library for the F3 columnar file format.
-    Reading CASCADE row data needs the optional native decoder. Writing is not implemented.
+    Reading CASCADE row data and writing a local file need the optional native build.
     Upstream F3 is a research prototype.
     """
   end
@@ -122,13 +130,15 @@ defmodule F3.MixProject do
          [title: "Your first F3 file in Elixir"]},
         {"docs/tutorials/04-streaming-and-column-projection.md",
          [title: "Streaming and column projection"]},
+        {"docs/tutorials/05-writing-f3-from-elixir.md", [title: "Writing F3 from Elixir"]},
         {"docs/tutorials/06-custom-encodings-and-wasm.md",
          [title: "Taking the decoder with the data"]},
         {"docs/tutorials/publication-plan.md", [title: "Publication plan"]},
         {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]},
         {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]},
         {"docs/test-reports/stage-2.md", [title: "Stage 2 test report"]},
-        {"docs/test-reports/stage-3.md", [title: "Stage 3 test report"]}
+        {"docs/test-reports/stage-3.md", [title: "Stage 3 test report"]},
+        {"docs/test-reports/stage-4.md", [title: "Stage 4 test report"]}
       ]
     ]
   end

@@ -16,6 +16,7 @@ defmodule F3.Native do
   """
 
   @external_resource Path.expand("../../native/f3_native/.f3_build_native", __DIR__)
+  @external_resource Path.expand("../../native/f3_write/src/main.rs", __DIR__)
   @build_native System.get_env("F3_BUILD_NATIVE") == "1"
 
   if @build_native do

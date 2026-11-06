@@ -35,6 +35,19 @@ case F3.read(file) do
     IO.puts("read: native decoder is not loaded")
 end
 
+out = Path.join(System.tmp_dir!(), "f3-tutorial-03-#{System.unique_integer([:positive])}.f3")
+
+case F3.Writer.open(out, schema: [trade_id: :int64, symbol: :utf8, price: {:float64, null: true}]) do
+  {:error, %F3.Error{category: :not_implemented}} ->
+    IO.puts("write: native writer is not loaded")
+
+  {:ok, writer} ->
+    :ok = F3.Writer.write(writer, [%{trade_id: 1, symbol: "AAPL", price: nil}])
+    {:ok, _} = F3.Writer.close(writer)
+    IO.puts("write: round trip")
+    File.rm(out)
+end
+
 {:ok, text} = F3.inspect(file)
 IO.puts("inspect:")
 IO.puts(text)

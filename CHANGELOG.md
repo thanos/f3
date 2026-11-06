@@ -4,7 +4,7 @@ This library's version is independent of the upstream F3 wire version. Nothing h
 
 ## [0.0.1] - Unreleased
 
-Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads need the optional native decoder. Writing is not implemented.
+Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads and local writes need the optional native build. Wasm stays opt-in.
 
 ### Added
 
@@ -29,3 +29,5 @@ Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads
 - `F3.Extension` and `F3.Registry`. An extension match does not fall through into Wasm. Registries are not shared unless the caller passes the same pid.
 - `test/fixtures/custom_wasm.f3` from the pinned writer after building `fff-ude-example-fff` for `wasm32-wasip1`. `small.f3` stays on the Vortex NIF.
 - Tutorial 6 is technically reviewed. The default script path leaves Wasm off.
+- `F3.Writer` writes a local file through an out-of-process `fff-poc` helper on `nightly-2025-02-24`. The NIF does not link `fff-poc`. `close/1` renames a temp file onto the destination. Without `F3_BUILD_NATIVE=1`, a valid open returns `:not_implemented` and creates nothing.
+- Tutorial 5 is technically reviewed. The default script path prints that the writer is not loaded.

@@ -6,7 +6,8 @@ defmodule F3 do
   release a byte source. `schema/1`, `metadata/1`, and `inspect/2` decode the
   postscript and the FlatBuffers footer. `read/2` returns columnar batches.
   `stream/2` returns a lazy stream and does not pread until the first pull.
-  Writing is not implemented. Wasm bytes are not executed.
+  `F3.Writer` writes a local file when `F3_BUILD_NATIVE=1` and returns
+  `:not_implemented` otherwise. Wasm bytes are not executed.
 
   `max_metadata_bytes` on the metadata calls caps the postscript size fields.
   The default is `F3.Postscript.max_metadata_bytes/0`.

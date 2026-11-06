@@ -203,6 +203,15 @@ defmodule F3.Error do
   end
 
   @doc """
+  A value does not fit the field type.
+  """
+  @spec invalid_type(atom(), String.t()) :: t()
+  def invalid_type(operation, message)
+      when is_atom(operation) and is_binary(message) do
+    build(:invalid_type, :invalid_type, operation, message, %{})
+  end
+
+  @doc """
   A size field is above the caller's allocation cap.
   """
   @spec resource_limit(atom(), String.t(), map()) :: t()

@@ -26,7 +26,19 @@ The CASCADE decoder does not build on stable Rust. A stable 1.97.1 `cargo check`
 
 Workspace crates.io pins used by the writer include Arrow and Parquet 53.0.0 and FlatBuffers 24.3.25. The upstream `Cargo.lock` resolves `arrow-array` to 53.3.0; crates.io does not offer `arrow-buffer` 53.0.0 (53.3.0 and 53.4.1 are the selectable releases). `f3_native` pins `arrow-array = "=53.3.0"`. Vortex and Lance come from `https://github.com/XinyuZeng/vortex.git` revision `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a` and `https://github.com/XinyuZeng/lance.git` revision `ff922b192422d5a4da8f3384e0a019925f4f339f`. The only git submodule is `third_party/flatbuffers`, used to build `flatc`.
 
-A freestanding Cargo package that path-depends on `fff-poc` resolves those version ranges to newer crates that do not compile on this nightly. Fixture generation therefore builds inside the upstream workspace and its `Cargo.lock`.
+A freestanding Cargo package that path-depends on `fff-poc` resolves those version ranges to newer crates that do not compile on this nightly. Fixture generation and the Stage 4 writer therefore build inside the upstream workspace and its `Cargo.lock`.
+
+## Writer
+
+`FileWriter` lives only in `fff-poc` (`fff-poc/src/writer.rs`). There is no `FileWriterV2` and no path API. The caller supplies `Write + Seek`. `try_new` writes nothing. `write_batch` encodes one Arrow `RecordBatch`. `finish` consumes the writer, flushes encoders, writes the footer, and only then writes the 32-byte postscript and the `F3` magic. A failed `finish` leaves whatever bytes were already flushed. The type does not rename or delete a path.
+
+Default options from `FileWriterOptionsBuilder::with_defaults`: IOUnit 8 MiB, `encoding_unit_len` 65536, one row group (`row_group_size = u64::MAX`), checksum type xxHash, `write_built_in_wasm` false, `EncoderDictionary`, IOUnit checksums off, compression `Uncompressed`. `encoding_unit_len` is stored and not read. `custom_encunit_len` is marked unfinished. This library does not expose either. A batch can overshoot `row_group_size` because the check runs after the batch is encoded. Compression after Vortex is `Uncompressed`, `Lz4` (`lz4_flex`), or `Zstd`. The stored encoding is `CASCADE` at version `0.21.0`. `write_built_in_wasm` stays false. No custom Wasm options are set.
+
+`create_logical_encoder` accepts the non-nested Arrow primitives, `List`/`LargeList`, and `Struct`. `Map` is `todo!`. This library's reader can round-trip signed int64 and int32, unsigned int64, int32, int16, and int8, float64, float32, bool, utf8, lists of those, and structs of those, including nulls. The writer claims that set only. It does not claim signed int8 or int16, float16, binary, decimal, dates, timestamps, map, an Arrow dictionary type, or a shared dictionary.
+
+The helper is a separate process. `fff-poc` installs mimalloc as a global allocator and pulls `reqwest` through `object_store`, and Rustler 0.38 does not build on `nightly-2025-02-24`. `native/f3_write` is copied onto the pinned checkout and compiled as `fff-poc`'s `f3_write` bin with `cargo build --locked` on `nightly-2025-02-24`. There is no freestanding `Cargo.lock` in that directory: resolving one pulls crates this nightly cannot compile. `native/f3_native` does not depend on it. Elixir writes a temp file in the destination directory and renames it only after `finish` succeeds. That rename is local-filesystem behavior, not a remote write.
+
+A zero-row batch is not sent. An empty `write_batch` at this pin leaves a chunk this library cannot concatenate. `finish` always closes the current row group, so a batch that already crossed `row_group_size` is followed by an empty group unless a later batch is still open. A list column split across two `write_batch` calls makes pinned `FileReaderV2` panic in `primitive_to_arrow` because the child `ScalarBuffer` is not aligned. This library concatenates the offset column and reads that file. The independent row check uses one batch for nested values.
 
 ## Postscript
 
