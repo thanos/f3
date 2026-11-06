@@ -30,6 +30,6 @@ The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/sta
 | Optional NIF | implemented when `F3_BUILD_NATIVE=1` | macOS arm64, rustc 1.93.0-nightly (`nightly-2025-11-15`), Elixir 1.20.2 / OTP 28. Default build: `{:error, :native_unavailable}`. Linux not run locally |
 | macOS arm64 local Elixir tests | passed | Elixir 1.20.2, OTP 28.3.1. `mix test --cover` passes the 90% threshold. See [test-reports/stage-1.md](test-reports/stage-1.md). |
 | Linux x86_64 CI | configured, not run | `.github/workflows/ci.yml` job `test (ubuntu-latest)` |
-| macOS arm64 CI | configured, not run | `.github/workflows/ci.yml` job `test (macos-14)` |
+| macOS arm64 CI | configured, not run | `.github/workflows/ci.yml` job `test (macos-15)` |
 | Linux arm64 | untested | no job |
 | Upstream Intel Debian 12 | untested by this repo | upstream's own claim, not reproduced here |
