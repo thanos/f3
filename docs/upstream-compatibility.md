@@ -64,6 +64,20 @@ Default writer options in `fff-poc/src/options.rs`: 8 MiB IOUnit, 65536-row EncU
 
 Column metadata is not inline in the footer. A reader that decodes only the footer does not have every IOUnit.
 
+## Wasm ABI at this pin
+
+Recorded from `fff-ude/src/ffi.rs`, `fff-ude-wasm/src/lib.rs`, `fff-poc/src/decoder/encunit.rs`, and `fff-poc/src/file/footer.rs` at `bd92506447dc1333820cfe9a34ebbf497fe0219e`. This is not a claim that a Wasm fixture has been produced.
+
+The version symbol is the exported name `FFFUDE_VERSION_1_0`. Upstream `fff-ude-wasm` accepts a major less than or equal to 3. This library accepts major 1 only, because that is the version the built-in example exports. Majors 2 and 3 stay unsupported until a fixture uses them.
+
+The host crate is Wasmtime 28.0.0, the workspace pin. The encunit call is `decode_general_ffi` (`WASM_FUNC_GENERAL`). It returns an iterator of Arrow buffers. Non-nested types are rebuilt from those buffers. Nested Wasm output is `unimplemented!` upstream, so this library does not claim it. Required exports are `alloc`, `dealloc`, `buffer_iterator_next`, `buffer_iterator_drop`, `buffer_drop`, and `memory`. `init_ffi` and `decode_ffi` are optional and unused. `fff-ude-wasm` is not a dependency. It installs a process-global engine and is tied to `fff-poc`.
+
+WASI is linked. The context built for an instance has size-capped stdout and stderr only. There is no preopened directory, no network, and the process environment is not inherited. A module that imports `path_open` or a socket is refused before instantiation. `StoreLimits` caps linear memory at 8 MiB. A module is refused above 16 MiB. The pinned `fff-ude-example-fff` artifact is 10_661_135 bytes, so the ceiling is above the 8 MiB figure that would have rejected this fixture. An omitted `wasm_id` is FlatBuffers default 0. Upstream sets no fuel and no wall-clock limit. This library adds a fuel budget of 5_000_000 instructions because Wasmtime 28 supports `consume_fuel`. Exhaustion is `:resource_limit`. That cap is ours.
+
+Wasm bytes live in the `WASMBinaries` section. `wasm_id` is the index into that vector. Upstream compiles every module in the section on first use. This library compiles one module, only after `wasm: :sandbox` (or a registered extension has already declined the unit), and only the id the encunit names. A compiled module may be cached by the SHA-256 of its bytes. The cache is bounded to 8 modules and 8 MiB, and clearing it drops every entry. A cache hit still requires that read to have opted in. Metadata inspection does not compile or execute anything.
+
+`DEFAULT_ENCODING_VERSIONS` lists CASCADE `0.21.0` and CUSTOM_WASM `1.0.0`. `create_encunit_decoder` uses Wasm for CASCADE only when the file version is newer and the reader major is 0 or the majors differ. Native `0.21.0` has major 0, so a newer CASCADE version takes Wasm and an equal or older version stays on the Vortex NIF. The eight committed fixtures stay on that NIF. `lib_urls` stay inert strings. No HTTP client is added. Wasmtime and `wasi-common` are Apache-2.0.
+
 ## What this library claims
 
 Stage 0 claims the constants, the source lifecycle, and the fixtures produced by that writer. It does not claim that it can decode them. The feature matrix lists each capability.
@@ -78,6 +92,6 @@ Stage 0 claims the constants, the source lifecycle, and the fixtures produced by
 6. Metadata length fields are attacker-controlled. Stage 0 does not allocate from them. Stage 1 must cap them before any read.
 7. Embedded Wasm and `lib_urls` in the schema are not fetched and not executed. A later stage must keep that as the default.
 8. The Hex name `f3` was free on the inspection date. Publish only after checking again, and only with an explicit experimental label.
-9. The built-in Wasm fixture depends on a `wasm32-wasip1` build of `fff-ude-example-fff`. On this Apple Silicon machine that build failed in `zstd-sys` because clang could not find the Wasm C headers. The fixture is omitted. Absence is not a claim that Wasm works.
+9. `custom_wasm.f3` was produced on this Apple Silicon machine after `brew install wasi-libc` (34) and `wasi-runtimes` (23.1.5). Homebrew LLVM 23.1.5 compiled the C objects in `zstd-sys`. The final Wasm link used the `nightly-2025-02-24` rustc linker, not Homebrew clang. The fixture is one local writer run. It is not an upstream support claim for Apple Silicon.
 10. `fff-poc` samples encodings with `rand::thread_rng`. Regenerating fixtures is not always byte-identical. The manifest records one real run.
 11. Parent `.tool-versions` asks for Erlang 29.0.4, which is not installed here. This repository pins Elixir 1.20.2 / OTP 28 so `mix` runs.

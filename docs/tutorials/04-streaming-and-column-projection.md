@@ -41,7 +41,7 @@ to_rows of the first batch:
 to_rows copies every value into a map. Keep the batch for a large file.
 ```
 
-A build without the decoder prints `stream: native decoder is not loaded` and does not pread the encoding units. `mix test` is that build. Compile the decoder with `F3_BUILD_NATIVE=1 mix compile --force` on Rust `nightly-2025-11-15`, then run the script again.
+A build without the decoder prints `stream: native decoder is not loaded` and does not pread the encoding units. `mix test` is that build. Compile the decoder with `F3_BUILD_NATIVE=1 mix compile` on Rust `nightly-2025-11-15`, then run the script again.
 
 The second row group stays unread after `Enum.take/2`. Closing is still the caller's job. The handle returned by `close/1` is the one that is closed.
 
@@ -51,7 +51,7 @@ The eight fixtures fit in one encoding unit each. They do not show how a multi-u
 
 ## Next
 
-Tutorial 5 is writing, and it is not implemented. Tutorial 6 is Wasm, and execution stays off.
+Tutorial 5 is writing, and it is not implemented. Tutorial 6 is Wasm. It stays off unless the caller passes `wasm: :sandbox`.
 
 ## Sources
 

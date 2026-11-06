@@ -85,17 +85,57 @@ defmodule F3.ReadTest do
     assert {:error, %F3.Error{category: :corrupt, message: "bad unit"}} = F3.read(file)
   end
 
-  test "wasm and shared dictionaries are refused without being executed" do
+  test "wasm stays off and a shared dictionary is refused" do
+    unit = %{encoding: :custom_wasm, compression: :uncompressed, wasm_id: 0}
+
+    plan = %{
+      versions: [
+        %{encoding: :custom_wasm, version: %{major: 1, minor: 0, patch: 0}},
+        %{encoding: :cascade, version: %{major: 0, minor: 21, patch: 0}}
+      ],
+      wasm: :off,
+      extensions: nil,
+      operation: :read
+    }
+
     assert {:error, %F3.Error{category: :unsupported_encoding, message: message}} =
-             F3.Reader.reject_chunk(%{
-               dictionary: :none,
-               encunits: [%{encoding: :custom_wasm, compression: :uncompressed}]
-             })
+             F3.Dispatch.choose(unit, plan)
 
     assert message =~ "CUSTOM_WASM"
+    assert {:ok, :wasm} = F3.Dispatch.choose(unit, %{plan | wasm: :sandbox})
+
+    assert {:ok, :native} =
+             F3.Dispatch.choose(
+               %{encoding: :cascade, compression: :uncompressed, wasm_id: nil},
+               plan
+             )
 
     assert {:error, %F3.Error{category: :unsupported_encoding}} =
              F3.Reader.reject_chunk(%{dictionary: {:shared, 2}, encunits: []})
+  end
+
+  test "a default read does not pread the wasm section" do
+    stub_small()
+    {:ok, file} = F3.open("test/fixtures/small.f3")
+    {:ok, meta} = F3.metadata(file)
+    section = Enum.find(meta.optional_sections, &(&1.name == "WASMBinaries"))
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+    tapped = tapped("test/fixtures/small.f3", agent)
+
+    assert {:ok, [%F3.Batch{num_rows: 3}]} = F3.read(tapped)
+    refute section_hit?(Agent.get(agent, & &1), section)
+
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+    tapped = tapped("test/fixtures/small.f3", agent)
+    assert {:ok, stream} = F3.stream(tapped)
+    assert [%F3.Batch{num_rows: 3}] = Enum.to_list(stream)
+    refute section_hit?(Agent.get(agent, & &1), section)
+
+    assert {:error, %F3.Error{category: :invalid_argument}} = F3.read(file, wasm: :on)
+    assert {:error, %F3.Error{category: :invalid_argument}} = F3.read(file, extensions: :nope)
+
+    assert {:error, %F3.Error{category: :invalid_argument}} =
+             F3.read(file, wasm_module_bytes: 16 * 1024 * 1024 + 1)
   end
 
   test "nested struct and list columns stitch to the manifest rows" do
@@ -407,6 +447,12 @@ defmodule F3.ReadTest do
       source_state: {fun, memory},
       origin: :memory
     }
+  end
+
+  defp section_hit?(reads, section) do
+    Enum.any?(reads, fn {offset, length} ->
+      offset < section.offset + section.size and offset + length > section.offset
+    end)
   end
 
   defp tapped(path, agent) do

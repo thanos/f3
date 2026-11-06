@@ -9,8 +9,9 @@ defmodule F3.Reader do
   `Enum.take/2` stops further reads. The caller still owns `F3.close/1`.
 
   Chunk checksums are verified only when the footer stored one. The eight
-  fixtures store none. `CUSTOM_WASM` and shared dictionaries are refused and
-  the bytes are not executed.
+  fixtures store none. Shared dictionaries are refused. `CUSTOM_WASM` is
+  refused unless the caller passes `wasm: :sandbox` or registers an
+  `F3.Extension`. Metadata inspection never executes a module.
   """
 
   alias F3.Checksum
@@ -19,7 +20,7 @@ defmodule F3.Reader do
   alias F3.Logical
 
   @default_batch_size 8192
-  @allowed [:columns, :row_groups, :batch_size]
+  @allowed [:columns, :row_groups, :batch_size, :wasm, :extensions, :wasm_module_bytes]
 
   @doc """
   Default number of rows in one batch.
@@ -32,8 +33,9 @@ defmodule F3.Reader do
   """
   @spec read(F3.File.t(), keyword()) :: {:ok, [F3.Batch.t()]} | {:error, F3.Error.t()}
   def read(file, opts) when is_list(opts) do
-    with {:ok, decoder} <- open_decoder(file, :read),
-         {:ok, plan} <- plan(file, opts, :read) do
+    with :ok <- ensure_open(file, :read),
+         {:ok, plan} <- plan(file, opts, :read),
+         {:ok, decoder} <- decoder_for(file, plan, :read) do
       collect(plan, decoder, [])
     end
   end
@@ -48,16 +50,18 @@ defmodule F3.Reader do
   """
   @spec stream(F3.File.t(), keyword()) :: {:ok, Enumerable.t()} | {:error, F3.Error.t()}
   def stream(file, opts) when is_list(opts) do
-    with {:ok, decoder} <- open_decoder(file, :stream),
+    with :ok <- ensure_open(file, :stream),
          :ok <- validate(opts, :stream) do
-      stream =
-        Stream.resource(
-          fn -> {:new, file, opts, decoder} end,
-          &pull/1,
-          fn _acc -> :ok end
-        )
+      case open_decoder(file, :stream) do
+        {:ok, decoder} ->
+          {:ok, lazy_stream(file, opts, decoder)}
 
-      {:ok, stream}
+        {:error, %Error{category: :native_unavailable}} ->
+          probe_without_decoder(file, opts)
+
+        {:error, %Error{}} = error ->
+          error
+      end
     end
   end
 
@@ -66,7 +70,7 @@ defmodule F3.Reader do
   end
 
   @doc """
-  Refuses a shared dictionary or a Wasm encoding unit.
+  Refuses a shared dictionary. Wasm is decided later by `F3.Dispatch`.
   """
   @spec reject_chunk(F3.RowGroup.chunk()) :: :ok | {:error, F3.Error.t()}
   def reject_chunk(%{dictionary: {:shared, index}}) do
@@ -148,74 +152,105 @@ defmodule F3.Reader do
       column = Enum.at(group.columns, index)
       chunk = Enum.at(column.chunks, chunk_index)
 
-      case decode_chunk(plan.file, chunk, type, decoder, plan.operation) do
+      case decode_chunk(plan, chunk, type, decoder) do
         {:ok, decoded} -> {:cont, {:ok, Map.put(acc, index, decoded)}}
         {:error, %Error{}} = error -> {:halt, error}
       end
     end)
   end
 
-  defp decode_chunk(file, chunk, type, decoder, operation) do
+  defp decode_chunk(plan, chunk, type, decoder) do
     with :ok <- reject_chunk(chunk),
-         {:ok, bytes} <- pread_chunk(file, chunk, operation),
+         :ok <- preview_units(chunk, plan),
+         {:ok, bytes} <- pread_chunk(plan.file, chunk, plan.operation),
          :ok <- Checksum.verify(bytes, chunk.checksum),
-         {:ok, units} <- split_units(chunk.encunits, bytes, operation),
-         {:ok, column} <- decode_units(chunk.dictionary, units, type, decoder, operation) do
-      expect_rows(column, chunk.num_rows, operation)
+         {:ok, units} <- split_units(chunk.encunits, bytes, plan.operation),
+         {:ok, column} <- decode_units(chunk.dictionary, units, type, decoder, plan) do
+      expect_rows(column, chunk.num_rows, plan.operation)
     end
   end
 
-  defp decode_units(_dictionary, [], type, _decoder, _operation) do
+  defp preview_units(chunk, plan) do
+    Enum.reduce_while(chunk.encunits, :ok, fn unit, :ok ->
+      case F3.Dispatch.choose(unit, plan) do
+        {:ok, _route} -> {:cont, :ok}
+        {:error, %Error{}} = error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp decode_units(_dictionary, [], type, _decoder, _plan) do
     {:ok, Column.empty(type)}
   end
 
-  defp decode_units({:local, _indexes}, units, type, decoder, operation) do
-    decode_local(units, type, decoder, nil, operation)
+  defp decode_units({:local, _indexes}, units, type, decoder, plan) do
+    decode_local(units, type, decoder, nil, plan)
   end
 
-  defp decode_units(_dictionary, units, type, decoder, operation) do
-    decode_plain(units, type, decoder, nil, operation)
+  defp decode_units(_dictionary, units, type, decoder, plan) do
+    decode_plain(units, type, decoder, nil, plan)
   end
 
-  defp decode_plain([], _type, _decoder, acc, _operation), do: {:ok, acc}
+  defp decode_plain([], _type, _decoder, acc, _plan), do: {:ok, acc}
 
-  defp decode_plain([{unit, bytes} | rest], type, decoder, acc, operation) do
-    with :ok <- reject_unit(unit),
-         {:ok, column} <- decoder.decode(bytes, unit.compression, type),
+  defp decode_plain([{unit, bytes} | rest], type, decoder, acc, plan) do
+    with {:ok, column} <- run_unit(unit, bytes, type, decoder, plan),
          {:ok, acc} <- Column.concat(acc, column) do
-      decode_plain(rest, type, decoder, acc, operation)
+      decode_plain(rest, type, decoder, acc, plan)
     end
   end
 
-  defp decode_local([], _type, _decoder, acc, _operation), do: {:ok, acc}
+  defp decode_local([], _type, _decoder, acc, _plan), do: {:ok, acc}
 
   defp decode_local(
          [{dict_unit, dict_bytes}, {index_unit, index_bytes} | rest],
          type,
          decoder,
          acc,
-         operation
+         plan
        ) do
-    with :ok <- reject_unit(dict_unit),
-         :ok <- reject_unit(index_unit),
-         {:ok, dict} <- decoder.decode(dict_bytes, dict_unit.compression, type),
-         {:ok, index} <- decoder.decode(index_bytes, index_unit.compression, :integer),
+    with {:ok, dict} <- run_unit(dict_unit, dict_bytes, type, decoder, plan),
+         {:ok, index} <- run_unit(index_unit, index_bytes, :integer, decoder, plan),
          {:ok, gathered} <- Column.gather(dict, index),
          {:ok, acc} <- Column.concat(acc, gathered) do
-      decode_local(rest, type, decoder, acc, operation)
+      decode_local(rest, type, decoder, acc, plan)
     end
   end
 
-  defp decode_local(_units, _type, _decoder, _acc, operation) do
-    {:error, Error.corrupt(operation, "local dictionary encunits must come in pairs")}
+  defp decode_local(_units, _type, _decoder, _acc, plan) do
+    {:error, Error.corrupt(plan.operation, "local dictionary encunits must come in pairs")}
   end
 
-  defp reject_unit(%{encoding: :cascade, compression: compression})
-       when compression in [:uncompressed, :zstd, :lz4], do: :ok
+  defp run_unit(unit, bytes, type, decoder, plan) do
+    case F3.Dispatch.choose(unit, plan) do
+      {:ok, :native} ->
+        decoder.decode(bytes, unit.compression, type)
 
-  defp reject_unit(%{encoding: :custom_wasm}) do
-    {:error, Error.unsupported_encoding(:read, "CUSTOM_WASM is not executed")}
+      {:ok, {:extension, module}} ->
+        module.decode(bytes, unit_metadata(unit, plan), type)
+
+      {:ok, :wasm} ->
+        F3.Wasm.decode(plan, unit, bytes, type)
+
+      {:error, %Error{}} = error ->
+        error
+    end
   end
+
+  defp unit_metadata(unit, plan) do
+    %{version: version} = Enum.find(plan.versions, &(&1.encoding == unit.encoding))
+
+    %{
+      encoding: unit.encoding,
+      version: version,
+      wasm_id: Map.get(unit, :wasm_id),
+      compression: unit.compression
+    }
+  end
+
+  defp reject_unit(%{encoding: encoding, compression: compression})
+       when encoding in [:cascade, :custom_wasm] and compression in [:uncompressed, :zstd, :lz4],
+       do: :ok
 
   defp reject_unit(%{encoding: encoding, compression: compression}) do
     {:error,
@@ -343,8 +378,13 @@ defmodule F3.Reader do
          fields: fields,
          schema_fields: metadata.schema.fields,
          groups: groups,
+         sections: metadata.optional_sections,
+         versions: metadata.encoding_versions,
          pending: [],
          batch_size: batch_size(opts),
+         wasm: Keyword.get(opts, :wasm, :off),
+         extensions: Keyword.get(opts, :extensions),
+         module_cap: Keyword.get(opts, :wasm_module_bytes, F3.Wasm.default_module_bytes()),
          operation: operation
        }}
     end
@@ -392,7 +432,87 @@ defmodule F3.Reader do
     end
   end
 
-  defp open_decoder(%F3.File{closed: true}, operation), do: {:error, Error.closed(operation)}
+  defp ensure_open(%F3.File{closed: true}, operation), do: {:error, Error.closed(operation)}
+  defp ensure_open(%F3.File{}, _operation), do: :ok
+
+  defp ensure_open(_file, operation),
+    do: {:error, Error.invalid_argument(operation, "expected an F3.File")}
+
+  defp lazy_stream(file, opts, decoder) do
+    Stream.resource(
+      fn -> {:new, file, opts, decoder} end,
+      &pull/1,
+      fn _acc -> :ok end
+    )
+  end
+
+  defp probe_without_decoder(file, opts) do
+    case plan(file, opts, :stream) do
+      {:ok, plan} -> finish_probe(file, opts, plan)
+      {:error, %Error{}} = error -> error
+    end
+  end
+
+  defp finish_probe(file, opts, plan) do
+    if needs_host?(plan) do
+      {:error, Error.native_unavailable(:stream)}
+    else
+      accept_preview(file, opts, preview_groups(plan))
+    end
+  end
+
+  defp accept_preview(file, opts, :ok), do: {:ok, lazy_stream(file, opts, :unused)}
+  defp accept_preview(_file, _opts, {:error, %Error{}} = error), do: error
+
+  defp preview_groups(plan) do
+    Enum.reduce_while(plan.groups, :ok, fn group, :ok ->
+      case preview_group(plan, group) do
+        :ok -> {:cont, :ok}
+        {:error, %Error{}} = error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp preview_group(plan, group) do
+    Enum.reduce_while(group.columns, :ok, fn column, :ok ->
+      step(preview_column(plan, column))
+    end)
+  end
+
+  defp preview_column(plan, column) do
+    Enum.reduce_while(column.chunks, :ok, fn chunk, :ok ->
+      step(preview_units(chunk, plan))
+    end)
+  end
+
+  defp step(:ok), do: {:cont, :ok}
+  defp step({:error, %Error{}} = error), do: {:halt, error}
+
+  defp decoder_for(file, plan, operation) do
+    if needs_host?(plan) do
+      open_decoder(file, operation)
+    else
+      {:ok, :unused}
+    end
+  end
+
+  defp needs_host?(plan) do
+    Enum.any?(plan.groups, &group_needs_host?(plan, &1))
+  end
+
+  defp group_needs_host?(plan, group) do
+    Enum.any?(group.columns, fn column ->
+      Enum.any?(column.chunks, &chunk_needs_host?(plan, &1))
+    end)
+  end
+
+  defp chunk_needs_host?(plan, chunk) do
+    Enum.any?(chunk.encunits, &host_route?(plan, &1))
+  end
+
+  defp host_route?(plan, unit) do
+    match?({:ok, route} when route in [:native, :wasm], F3.Dispatch.choose(unit, plan))
+  end
 
   defp open_decoder(%F3.File{}, operation) do
     case Application.get_env(:f3, :decoder, F3.Decoder.Native) do
@@ -401,16 +521,39 @@ defmodule F3.Reader do
     end
   end
 
-  defp open_decoder(_file, operation) do
-    {:error, Error.invalid_argument(operation, "expected an F3.File")}
-  end
-
   defp validate(opts, operation) do
     with :ok <- unknown(opts, operation),
          :ok <- columns_opt(Keyword.get(opts, :columns), operation),
-         :ok <- groups_opt(Keyword.get(opts, :row_groups), operation) do
-      batch_opt(Keyword.get(opts, :batch_size, @default_batch_size), operation)
+         :ok <- groups_opt(Keyword.get(opts, :row_groups), operation),
+         :ok <- wasm_opt(Keyword.get(opts, :wasm, :off), operation),
+         :ok <- extensions_opt(Keyword.get(opts, :extensions), operation),
+         :ok <- batch_opt(Keyword.get(opts, :batch_size, @default_batch_size), operation) do
+      module_opt(
+        Keyword.get(opts, :wasm_module_bytes, F3.Wasm.default_module_bytes()),
+        operation
+      )
     end
+  end
+
+  defp wasm_opt(value, _operation) when value in [:off, :sandbox], do: :ok
+
+  defp wasm_opt(_value, operation) do
+    {:error, Error.invalid_argument(operation, "wasm must be :off or :sandbox")}
+  end
+
+  defp extensions_opt(nil, _operation), do: :ok
+  defp extensions_opt(pid, _operation) when is_pid(pid), do: :ok
+
+  defp extensions_opt(_pid, operation) do
+    {:error, Error.invalid_argument(operation, "extensions must be a registry pid")}
+  end
+
+  defp module_opt(size, _operation)
+       when is_integer(size) and size > 0 and size <= 16 * 1024 * 1024, do: :ok
+
+  defp module_opt(_size, operation) do
+    {:error,
+     Error.invalid_argument(operation, "wasm_module_bytes is above 16 MiB or not positive")}
   end
 
   defp unknown(opts, operation) do

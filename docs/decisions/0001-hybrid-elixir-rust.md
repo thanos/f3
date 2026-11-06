@@ -22,7 +22,7 @@ Elixir owns the public API, errors, source lifecycle, version policy, the postsc
 
 Stage 2 adds `decode_encunit/3` behind `F3_BUILD_NATIVE=1`. The crate depends on Vortex at `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a` and `arrow-array` 53.3.0. It does not depend on `fff-poc` and it does not install mimalloc. The function is scheduled `DirtyCpu`. Stable Rust cannot compile Vortex, and `nightly-2025-02-24` cannot compile Rustler 0.38, so this crate pins `nightly-2025-11-15`. See [../upstream-compatibility.md](../upstream-compatibility.md).
 
-Do not compile `fff-poc` or Wasmtime into `f3_native`.
+Do not compile `fff-poc` into `f3_native`. Stage 3 compiles Wasmtime 28.0.0 into the same crate. It does not depend on `fff-ude-wasm`. The host runs only after Elixir has selected `:wasm`.
 
 ## Consequences
 
@@ -30,7 +30,7 @@ Do not compile `fff-poc` or Wasmtime into `f3_native`.
 - Postscript inspection cannot be broken by a NIF load failure.
 - Stage 1 walks vtables in Elixir with a depth cap and a visit cap. The fallback remains a small Rust parser, not a fork of `fff-poc`. It was not needed for the committed fixtures.
 - Stage 2 decodes CASCADE units through that narrow NIF. Elixir projects, stitches nested columns, gathers a local dictionary, and slices batches.
-- Wasm stays off. The NIF has no interpreter. `CUSTOM_WASM` is refused.
+- Wasm is opt-in. `wasm: :off` refuses `CUSTOM_WASM` without reading the section. `wasm: :sandbox` calls `decode_general_ffi` under fuel, memory, and module-size caps. Elixir extensions are registry policy, not a file field.
 
 ## Revisit when
 

@@ -6,6 +6,8 @@ defmodule F3.MixProject do
   @paper "https://doi.org/10.1145/3749163"
 
   def project do
+    stamp_native_flag()
+
     [
       app: :f3,
       version: @version,
@@ -32,6 +34,21 @@ defmodule F3.MixProject do
     [
       preferred_envs: [ci: :test]
     ]
+  end
+
+  # F3.Native reads F3_BUILD_NATIVE while it compiles. Mix only recompiles a
+  # module when a source or an @external_resource changes, so a later
+  # `mix test` would keep the previous beam. Rewriting this stamp when the
+  # flag changes invalidates that beam.
+  defp stamp_native_flag do
+    path = Path.join(__DIR__, "native/f3_native/.f3_build_native")
+    stamp = System.get_env("F3_BUILD_NATIVE") || "0"
+    previous = if File.regular?(path), do: File.read!(path), else: nil
+
+    if previous != stamp do
+      File.mkdir_p!(Path.dirname(path))
+      File.write!(path, stamp)
+    end
   end
 
   defp deps do
@@ -105,10 +122,13 @@ defmodule F3.MixProject do
          [title: "Your first F3 file in Elixir"]},
         {"docs/tutorials/04-streaming-and-column-projection.md",
          [title: "Streaming and column projection"]},
+        {"docs/tutorials/06-custom-encodings-and-wasm.md",
+         [title: "Taking the decoder with the data"]},
         {"docs/tutorials/publication-plan.md", [title: "Publication plan"]},
         {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]},
         {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]},
-        {"docs/test-reports/stage-2.md", [title: "Stage 2 test report"]}
+        {"docs/test-reports/stage-2.md", [title: "Stage 2 test report"]},
+        {"docs/test-reports/stage-3.md", [title: "Stage 3 test report"]}
       ]
     ]
   end

@@ -449,13 +449,27 @@
       "notes": "One nullable struct column and one list<int32> column.",
       "bytes": 7200,
       "sha256": "513484d51ab71b8a18cb27a062ab04da2ac340e0827d49ab9e7734bb697d0407"
-    }
-  ],
-  "skipped": [
+    },
     {
       "name": "custom_wasm.f3",
-      "reason": "built-in wasm artifact is missing. FileWriterOptions::write_built_in_wasm reads fff-test-util BUILTIN_WASM_PATH, which is target/wasm32-wasip1/opt-size-lvl3/fff_ude_example_fff.wasm under the upstream checkout. The wasm32-wasip1 build of fff-ude-example-fff failed while compiling zstd-sys. Distinct clang errors:\nfatal error: 'stdlib.h' file not found\nfatal error: 'string.h' file not found\nfatal error: 'stdio.h' file not found\nfatal error: 'assert.h' file not found"
+      "schema": [
+        {
+          "name": "trade_id",
+          "type": "int64",
+          "nullable": false
+        }
+      ],
+      "rows": [[1], [2], [3]],
+      "options": {
+        "compression": "uncompressed",
+        "dictionary": "EncoderDictionary",
+        "wasm": "write_built_in_wasm"
+      },
+      "notes": "Uses FileWriterOptions::write_built_in_wasm. Upstream labels those encodings CUSTOM_WASM and embeds target/wasm32-wasip1/opt-size-lvl3/fff_ude_example_fff.wasm. This is the upstream built-in Wasm decoder, not a separately authored encoder.",
+      "bytes": 10663647,
+      "sha256": "70beae4fedc5825d3de83e0ff0a117712283138afcdfee610da7f6d800eb6c8b"
     }
   ],
+  "skipped": [],
   "manifest_generated_at": "2026-11-03T01:03:52Z"
 }

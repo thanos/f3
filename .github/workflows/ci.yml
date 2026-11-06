@@ -1,9 +1,10 @@
 # Required jobs must pass. Jobs whose names start with "informational" may
 # fail (continue-on-error) and do not gate the branch.
 #
-# informational-native is the stable-Rust version probe. Vortex does not build
-# on stable, so that job is expected to fail. The required decode job uses
-# nightly-2025-11-15.
+# informational-native repeats the native suite and does not gate the branch.
+# The compiler selects nightly-2025-11-15, so this job installs that toolchain
+# and runs `mix test --only native`. The rust-free suite expects no NIF.
+# The required decode job uses the same nightly.
 # informational-fixtures regenerates fixtures from upstream and runs only on
 # workflow_dispatch. Required jobs check the committed manifest. They do not
 # clone Vortex or Lance.
@@ -22,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, ubuntu-latest]
+        os: [macos-15, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
@@ -38,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, ubuntu-latest]
+        os: [macos-15, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
@@ -65,21 +66,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, ubuntu-latest]
+        os: [macos-15, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.20.2"
           otp-version: "28"
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-11-15
       - run: mix deps.get
         env:
           F3_BUILD_NATIVE: "1"
       - run: mix compile --warnings-as-errors
         env:
           F3_BUILD_NATIVE: "1"
-      - run: mix test
+      - run: mix test --only native
         env:
           F3_BUILD_NATIVE: "1"
 

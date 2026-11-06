@@ -52,7 +52,7 @@ pub fn decode_owned(
     }
 }
 
-fn decompress(compression: Compression, bytes: Vec<u8>) -> Result<Vec<u8>, String> {
+pub(crate) fn decompress(compression: Compression, bytes: Vec<u8>) -> Result<Vec<u8>, String> {
     match compression {
         Compression::None => Ok(bytes),
         Compression::Zstd => zstd::stream::decode_all(bytes.as_slice()).map_err(show),
@@ -146,7 +146,7 @@ fn to_arrow(array: vortex_array::ArrayData) -> Result<ArrayRef, String> {
         .map_err(show)
 }
 
-fn export_array(array: ArrayRef) -> Result<OwnedCol, String> {
+pub(crate) fn export_array(array: ArrayRef) -> Result<OwnedCol, String> {
     let rows = array.len();
     let validity = validity_bytes(array.as_ref());
     if let Some(values) = array.as_any().downcast_ref::<Int64Array>() {

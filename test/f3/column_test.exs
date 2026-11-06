@@ -148,6 +148,16 @@ defmodule F3.ColumnTest do
     assert {:error, %F3.Error{category: :native_unavailable}} = F3.Native.require_decoder(:read)
 
     assert {:error, %F3.Error{category: :native_unavailable}} =
+             F3.Native.apply_wasm(<<>>, <<>>, :uncompressed, :i64, 1, :read)
+
+    assert :ok = F3.Native.clear_wasm_cache()
+    assert :ok = F3.Native.invalidate_wasm(<<>>)
+    assert {:error, :native_unavailable} = F3.Native.wasm_sample("ok_i64")
+
+    assert {:error, :native_unavailable} =
+             F3.Native.decode_wasm(<<>>, <<>>, :uncompressed, :i64, 1)
+
+    assert {:error, %F3.Error{category: :native_unavailable}} =
              F3.Decoder.Native.decode(<<>>, :lz4, :i32)
 
     refute F3.Native.available?()
