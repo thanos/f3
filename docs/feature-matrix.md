@@ -2,7 +2,7 @@
 
 Status values: `implemented`, `not implemented`, `untested`. A fixture can contain a feature this library does not read. That is not support.
 
-The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/stage-0.md), [test-reports/stage-1.md](test-reports/stage-1.md), and [test-reports/stage-2.md](test-reports/stage-2.md). The required CI jobs are configured and have not been run from this machine.
+The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/stage-0.md), [test-reports/stage-1.md](test-reports/stage-1.md), [test-reports/stage-2.md](test-reports/stage-2.md), [test-reports/stage-3.md](test-reports/stage-3.md), and [test-reports/stage-4.md](test-reports/stage-4.md). The required CI jobs are configured and have not been run from this machine.
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/sta
 | Read rows | implemented when `F3_BUILD_NATIVE=1` | `F3.read/2` on the eight fixtures. Default build: `:native_unavailable` |
 | Lazy stream | implemented when `F3_BUILD_NATIVE=1` | `F3.stream/2` does not pread until the first pull. `Enum.take/2` stops |
 | Columnar batch and `to_rows/1` | implemented | `F3.Batch` stores columns. `to_rows/1` is the convenience zip |
-| Write | not implemented | `F3.Writer` |
+| Write | implemented when `F3_BUILD_NATIVE=1` | `F3.Writer`. Local temp file, rename after `finish`. Default build: `:not_implemented` |
 | Projection | implemented | `columns:` and `row_groups:`. Unknown name is `:invalid_projection` |
 | Postscript checksum | reported, not verified | both u64 fields are stored |
 | Chunk checksum | implemented when the footer field is present | XXH64 seed 0. The eight fixtures store none |
@@ -26,7 +26,8 @@ The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/sta
 | `CUSTOM_WASM` decode or execution | opt-in | Default `:off` is `:unsupported_encoding` and does not read the section. `wasm: :sandbox` runs Wasmtime 28 when `F3_BUILD_NATIVE=1`. `custom_wasm.f3` matches the manifest rows |
 | Shared dictionary | refused | `:unsupported_encoding` |
 | Local dictionary, Zstd, Lz4, nested types | implemented when `F3_BUILD_NATIVE=1` | round-trip of `dictionary.f3`, `compressed_zstd.f3`, `compressed_lz4.f3`, and `nested.f3` |
-| Bool and plain binary values | untested | not present in the eight fixtures |
+| Bool values | implemented when `F3_BUILD_NATIVE=1` | writer round trip. Not present in the eight fixtures |
+| Plain binary values | untested | not a claimed writer type, and not present in the eight fixtures |
 | Optional NIF | implemented when `F3_BUILD_NATIVE=1` | macOS arm64, rustc 1.93.0-nightly (`nightly-2025-11-15`), Elixir 1.20.2 / OTP 28. Default build: `{:error, :native_unavailable}`. Linux not run locally |
 | macOS arm64 local Elixir tests | passed | Elixir 1.20.2, OTP 28.3.1. `mix test --cover` passes the 90% threshold. See [test-reports/stage-1.md](test-reports/stage-1.md). |
 | Linux x86_64 CI | configured, not run | `.github/workflows/ci.yml` job `test (ubuntu-latest)` |

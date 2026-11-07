@@ -54,7 +54,7 @@ Upstream F3 at this pin is a research prototype. Wasm stays off unless the calle
 
 ## Next
 
-Tutorial 5 is the writer. It is not implemented. Wasm stays opt-in after that stage.
+Tutorial 5 writes a local file. Wasm stays opt-in. The writer does not embed a Wasm module.
 
 ## Sources
 

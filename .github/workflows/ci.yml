@@ -2,9 +2,9 @@
 # fail (continue-on-error) and do not gate the branch.
 #
 # informational-native repeats the native suite and does not gate the branch.
-# The compiler selects nightly-2025-11-15, so this job installs that toolchain
-# and runs `mix test --only native`. The rust-free suite expects no NIF.
-# The required decode job uses the same nightly.
+# The NIF selects nightly-2025-11-15. The writer helper selects
+# nightly-2025-02-24. The required decode job installs both and runs
+# `mix test --only native`. The rust-free suite expects no NIF.
 # informational-fixtures regenerates fixtures from upstream and runs only on
 # workflow_dispatch. Required jobs check the committed manifest. They do not
 # clone Vortex or Lance.
@@ -49,6 +49,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2025-11-15
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-02-24
       - run: mix deps.get
         env:
           F3_BUILD_NATIVE: "1"
@@ -76,6 +79,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2025-11-15
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-02-24
       - run: mix deps.get
         env:
           F3_BUILD_NATIVE: "1"

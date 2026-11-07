@@ -79,9 +79,21 @@ defmodule F3.ContractTest do
     assert {:error, %F3.Error{category: :invalid_argument}} = F3.stream(file, :bad)
     assert {:error, %F3.Error{category: :invalid_argument}} = F3.inspect(file, :bad)
     assert {:ok, []} = F3.Batch.to_rows(%F3.Batch{})
-    assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.open("out.f3")
+
+    rejected =
+      Path.join(System.tmp_dir!(), "f3-contract-#{System.unique_integer([:positive])}.f3")
+
+    assert {:error, %F3.Error{category: :invalid_argument}} = F3.Writer.open(rejected)
+    refute File.exists?(rejected)
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.write(:writer, [])
     assert {:error, %F3.Error{category: :not_implemented}} = F3.Writer.close(:writer)
+
+    unless File.read("native/f3_native/.f3_build_native") == {:ok, "1"} do
+      assert {:error, %F3.Error{category: :not_implemented}} =
+               F3.Writer.open(rejected, schema: [trade_id: :int64])
+
+      refute File.exists?(rejected)
+    end
   end
 
   test "memory pread honors offset and length without reading past the buffer" do

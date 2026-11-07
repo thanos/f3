@@ -46,6 +46,7 @@ defmodule F3.ExamplesTest do
     assert output =~ "row_groups: 1"
     assert output =~ "rows: 3"
     assert output =~ "read: native decoder is not loaded"
+    assert output =~ "write: native writer is not loaded"
     assert output =~ "after close: closed"
   end
 
@@ -57,6 +58,16 @@ defmodule F3.ExamplesTest do
 
     assert output =~ "command: mix run examples/tutorial_04.exs"
     assert output =~ "stream: native decoder is not loaded"
+  end
+
+  test "tutorial 5 example reports that the writer is not loaded" do
+    output =
+      capture_io(fn ->
+        Code.eval_file("examples/tutorial_05.exs")
+      end)
+
+    assert output =~ "command: mix run examples/tutorial_05.exs"
+    assert output =~ "write: native writer is not loaded"
   end
 
   test "tutorial 6 keeps wasm off unless the native sandbox is compiled" do

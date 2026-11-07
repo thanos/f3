@@ -260,6 +260,17 @@ defmodule F3.Column do
     end
   end
 
+  defp concat_same(%__MODULE__{kind: kind, child: nil} = left, %__MODULE__{child: nil} = right)
+       when kind in [:list32, :list64] do
+    {:ok,
+     %{
+       left
+       | num_rows: left.num_rows + right.num_rows,
+         values: join_offsets(kind, left.values, right.values),
+         validity: join_validity(left, right)
+     }}
+  end
+
   defp concat_same(%__MODULE__{kind: kind} = left, right) when kind in [:list32, :list64] do
     with {:ok, child} <- concat(left.child, right.child) do
       {:ok,

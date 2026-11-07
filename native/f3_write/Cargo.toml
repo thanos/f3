@@ -1,0 +1,13 @@
+[package]
+name = "f3_write"
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "Out-of-process F3 writer. Mix compiles src/main.rs as a bin of pinned fff-poc so that crate's Cargo.lock is used. f3_native does not link it."
+
+# A freestanding resolve of this git dependency pulls crates that
+# nightly-2025-02-24 cannot compile. The lock that is used is the pinned
+# checkout's Cargo.lock, via `cargo build --locked -p fff-poc --bin f3_write`.
+[dependencies]
+fff-poc = { git = "https://github.com/future-file-format/F3", rev = "bd92506447dc1333820cfe9a34ebbf497fe0219e" }

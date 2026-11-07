@@ -130,6 +130,22 @@ defmodule F3.ColumnTest do
       )
 
     assert {:ok, lists} = F3.Column.concat(list_left, list_right)
+
+    bare_left = %F3.Column{
+      kind: :list32,
+      num_rows: 1,
+      values: <<0::signed-little-32, 1::signed-little-32>>
+    }
+
+    bare_right = %F3.Column{
+      kind: :list32,
+      num_rows: 1,
+      values: <<0::signed-little-32, 0::signed-little-32>>
+    }
+
+    assert {:ok, bare} = F3.Column.concat(bare_left, bare_right)
+    assert bare.child == nil
+    assert bare.num_rows == 2
     assert F3.Column.value(lists, 0) == nil
     assert F3.Column.value(F3.Column.slice(lists, 1, 1), 0) == []
   end

@@ -24,6 +24,8 @@ Stage 2 adds `decode_encunit/3` behind `F3_BUILD_NATIVE=1`. The crate depends on
 
 Do not compile `fff-poc` into `f3_native`. Stage 3 compiles Wasmtime 28.0.0 into the same crate. It does not depend on `fff-ude-wasm`. The host runs only after Elixir has selected `:wasm`.
 
+Stage 4 writes through an out-of-process helper, `f3_write`, compiled as a bin of pinned `fff-poc` on `nightly-2025-02-24`. The helper's process has the mimalloc global allocator. The BEAM does not. `f3_native` still does not link `fff-poc`.
+
 ## Consequences
 
 - `mix test` runs without Rust.
