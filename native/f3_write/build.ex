@@ -44,7 +44,6 @@ defmodule F3.Writer.Build do
       File.mkdir_p!(Path.dirname(output))
       File.cp!(Path.join(target, "release/f3_write"), output)
       File.chmod!(output, 0o755)
-      Mix.Project.build_structure()
       :ok
     end
   end

@@ -41,9 +41,14 @@ defmodule F3.MixProject do
   # module when a source or an @external_resource changes, so a later
   # `mix test` would keep the previous beam. Rewriting this stamp when the
   # flag changes invalidates that beam.
+  # Runs from project/0, before Mix has pushed this config, so the helper
+  # must not call Mix.Project.build_structure/0. Compile later symlinks priv.
   defp install_writer do
     if System.get_env("F3_BUILD_NATIVE") == "1" do
-      Code.compile_file(Path.join(__DIR__, "native/f3_write/build.ex"))
+      unless Code.ensure_loaded?(F3.Writer.Build) do
+        Code.compile_file(Path.join(__DIR__, "native/f3_write/build.ex"))
+      end
+
       F3.Writer.Build.install!()
     end
   end
