@@ -14,19 +14,23 @@ defmodule F3 do
 
   A memory source is `open(path, source: {:memory, binary})` or
   `open({:memory, binary})`. When the `:source` option is a memory binary,
-  `path` is not opened.
+  `path` is not opened. An HTTP source is `open(path, source: {:http, url})`
+  or `open(path, source: {:http, url, opts})`. `path` is not opened. Remote
+  reads do not follow redirects and do not fetch `lib_urls`.
   """
 
   import Kernel, except: [inspect: 1]
 
+  alias F3.IO.HTTP
   alias F3.IO.Local
   alias F3.IO.Memory
 
   @doc """
-  Opens a local path or an in-memory binary.
+  Opens a local path, an in-memory binary, or an HTTP url.
 
-  The returned handle is not validated as F3. Missing local paths return
-  `{:error, %F3.Error{category: :not_found}}`.
+  The returned handle is not validated as F3. Missing local paths and missing
+  HTTP objects return `{:error, %F3.Error{category: :not_found}}`. HTTP options
+  live inside `{:http, url, opts}`.
   """
   @spec open(Path.t() | {:memory, binary()}, keyword()) ::
           {:ok, F3.File.t()} | {:error, F3.Error.t()}
@@ -34,19 +38,7 @@ defmodule F3 do
 
   def open(path, opts) when is_binary(path) and is_list(opts) do
     with :ok <- reject_unknown_opts(opts, [:source]) do
-      case Keyword.get(opts, :source, :file) do
-        :file ->
-          open_local(path)
-
-        {:memory, binary} when is_binary(binary) ->
-          open_memory(binary)
-
-        {:memory, _other} ->
-          {:error, F3.Error.invalid_argument(:open, "memory source must be a binary")}
-
-        other ->
-          {:error, F3.Error.invalid_argument(:open, "unknown source #{format_option(other)}")}
-      end
+      open_source(path, Keyword.get(opts, :source, :file))
     end
   end
 
@@ -221,6 +213,36 @@ defmodule F3 do
     {:error, F3.Error.invalid_argument(operation, "expected an F3.File")}
   end
 
+  defp open_source(path, :file), do: open_local(path)
+
+  defp open_source(_path, {:memory, binary}) when is_binary(binary), do: open_memory(binary)
+
+  defp open_source(_path, {:memory, _other}) do
+    {:error, F3.Error.invalid_argument(:open, "memory source must be a binary")}
+  end
+
+  defp open_source(_path, {:http, url, http_opts}) when is_binary(url) and is_list(http_opts) do
+    open_http(url, http_opts)
+  end
+
+  defp open_source(_path, {:http, url}) when is_binary(url), do: open_http(url, [])
+
+  defp open_source(_path, {:http, _url, http_opts}) when is_list(http_opts) do
+    {:error, F3.Error.invalid_argument(:open, "http source must be a url")}
+  end
+
+  defp open_source(_path, {:http, _url, _http_opts}) do
+    {:error, F3.Error.invalid_argument(:open, "http source options must be a keyword list")}
+  end
+
+  defp open_source(_path, {:http, _other}) do
+    {:error, F3.Error.invalid_argument(:open, "http source must be a url")}
+  end
+
+  defp open_source(_path, other) do
+    {:error, F3.Error.invalid_argument(:open, "unknown source #{format_option(other)}")}
+  end
+
   defp open_local(path) do
     case Local.open(path) do
       {:ok, state} ->
@@ -235,6 +257,16 @@ defmodule F3 do
     case Memory.open(binary) do
       {:ok, state} ->
         {:ok, %F3.File{source_module: Memory, source_state: state, origin: :memory}}
+
+      {:error, %F3.Error{}} = error ->
+        error
+    end
+  end
+
+  defp open_http(url, opts) do
+    case HTTP.open(url, opts) do
+      {:ok, state} ->
+        {:ok, %F3.File{source_module: HTTP, source_state: state, origin: state.display_url}}
 
       {:error, %F3.Error{}} = error ->
         error

@@ -16,7 +16,7 @@ Nothing in this file is scheduled, submitted, or posted. It is a backlog for a p
 | 8 | Building a safe binary-file reader on the BEAM | Bounds, NIFs, and a bug that the tests still catch | elixir, rustler |
 | 9 | Performance, compatibility, and what remains experimental | Numbers only from a recorded run | elixir, benchmarks |
 
-Articles 1–6 exist as technically reviewed drafts. Articles 7–9 have no files. Nothing here is scheduled.
+Articles 1–9 exist as technically reviewed drafts. None are `ready to publish`. Nothing here is scheduled.
 
 ## Canonical links
 
@@ -31,7 +31,10 @@ When a post exists, its canonical URL should point at one place, not at both the
 | 3 | Open, postscript, footer, then rows | Mermaid in the article |
 | 4 | Stream, project, take one batch | prose; no benchmark table |
 | 5 | Open, write, rename, read | Mermaid in the article |
-| 6–9 | none yet | add only when the article is written |
+| 6 | Wasm stays off, then one sandboxed call | Mermaid in the article |
+| 7 | Arrow, Parquet, and F3 as three jobs | Mermaid in the article |
+| 8 | Open, cap, pread, dirty CPU NIF | Mermaid in the article |
+| 9 | Recorded bench output | the script output in the article; no separate diagram |
 
 No external images. A text description sits next to each Mermaid block in the article itself.
 

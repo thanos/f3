@@ -2,12 +2,13 @@
 
 Status values: `implemented`, `not implemented`, `untested`. A fixture can contain a feature this library does not read. That is not support.
 
-The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/stage-0.md), [test-reports/stage-1.md](test-reports/stage-1.md), [test-reports/stage-2.md](test-reports/stage-2.md), [test-reports/stage-3.md](test-reports/stage-3.md), and [test-reports/stage-4.md](test-reports/stage-4.md). The required CI jobs are configured and have not been run from this machine.
+The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/stage-0.md), [test-reports/stage-1.md](test-reports/stage-1.md), [test-reports/stage-2.md](test-reports/stage-2.md), [test-reports/stage-3.md](test-reports/stage-3.md), [test-reports/stage-4.md](test-reports/stage-4.md), and [test-reports/stage-5.md](test-reports/stage-5.md). The required CI jobs are configured and have not been run from this machine.
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Open and close a local file | implemented | `F3.IO.Local`, contract tests |
 | Open and close an in-memory binary | implemented | `F3.IO.Memory`, contract tests |
+| HTTP range read | implemented | `F3.IO.HTTP`. Opt-in. Redirects refused. `:minio` excluded unless `F3_MINIO=1` |
 | Positioned read capped by the caller | implemented | `pread/3` tests |
 | Idempotent close, error after close | implemented | contract tests |
 | Wire version constants 0.1 | implemented | `F3.Format`, doctests |

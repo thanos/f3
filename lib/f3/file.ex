@@ -6,8 +6,9 @@ defmodule F3.File do
   decode metadata. `F3.close/1` releases the source. Closing a closed
   handle succeeds and returns the same closed handle.
 
-  A memory handle keeps the source binary until close. `Inspect` prints
-  the origin and closed flag, not the bytes.
+  A memory handle keeps the source binary until close. An HTTP handle's
+  origin is the url without userinfo. `Inspect` prints the origin and
+  closed flag, not bytes or request headers.
   """
 
   @enforce_keys [:source_module, :source_state, :origin]

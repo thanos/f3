@@ -6,7 +6,7 @@ The pinned upstream commit is `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The on
 
 ## What works
 
-`F3.open/2` and `F3.close/1` acquire and release a local file or an in-memory binary. `F3.schema/1`, `F3.metadata/1`, and `F3.inspect/2` decode the footer. `F3.read/2` and `F3.stream/2` decode CASCADE units when the native decoder is loaded, and return `:native_unavailable` when it is not. `F3.Writer.open/2` writes a local file in that build. Without it, a valid open returns `:not_implemented` and creates no file. There is no application callback to start.
+`F3.open/2` and `F3.close/1` acquire and release a local file, an in-memory binary, or an opt-in HTTP range source. `F3.schema/1`, `F3.metadata/1`, and `F3.inspect/2` decode the footer. `F3.read/2` and `F3.stream/2` decode CASCADE units when the native decoder is loaded, and return `:native_unavailable` when it is not. `F3.Writer.open/2` writes a local file in that build. Without it, a valid open returns `:not_implemented` and creates no file. There is no application callback to start.
 
 ```elixir
 {:ok, file} = F3.open("test/fixtures/small.f3")
@@ -19,10 +19,11 @@ The pinned upstream commit is `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The on
 
 `mix f3.inspect test/fixtures/small.f3` prints the same summary. Checksums are shown and not verified. A Wasm section is a pointer until a read passes `wasm: :sandbox`. Inspection does not execute it.
 
-A memory source does not touch the path:
+A memory source does not touch the path. An HTTP source does not open `path` either. Redirects are refused, and footer `lib_urls` are not fetched.
 
 ```elixir
 {:ok, file} = F3.open("unused", source: {:memory, binary})
+{:ok, file} = F3.open("unused", source: {:http, url})
 ```
 
 ## Build
@@ -37,7 +38,16 @@ mix ci
 
 `mix ci` is the required CI job: format, compile with warnings as errors, Credo, tests with coverage, and docs. It stops at the first failing step. The test step stops at the first failed test and requires 90% line coverage.
 
-`F3_BUILD_NATIVE=1 mix test --only native` builds `native/f3_native` and the out-of-process writer, then runs the conformance suite. The NIF build calls rustup's `nightly-2025-11-15` binaries even when asdf or Homebrew puts a stable `cargo` earlier on `PATH`. The writer is a separate `f3_write` binary built from pinned `fff-poc` with `nightly-2025-02-24`. The NIF decodes one CASCADE encoding unit on the dirty CPU scheduler and, only when Elixir asks, one Wasm module with Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Mix recompiles `F3.Native` when the flag changes. The default `mix test` excludes the native tests and does not invoke `cargo`.
+Source builds only. There is no precompiled NIF. Hex has not been published.
+
+```shell
+F3_BUILD_NATIVE=1 mix compile
+F3_BUILD_NATIVE=1 mix test --only native
+```
+
+The NIF build calls rustup's `nightly-2025-11-15` binaries even when asdf or Homebrew puts a stable `cargo` earlier on `PATH`. The writer is a separate `f3_write` binary. That build fetches pinned `fff-poc` and compiles it with `nightly-2025-02-24`. The NIF decodes one CASCADE encoding unit on the dirty CPU scheduler and, only when Elixir asks, one Wasm module with Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Mix recompiles `F3.Native` when the flag changes. The default `mix test` excludes the native tests and does not invoke `cargo`.
+
+`scripts/bench.exs` times `F3.read/2` and `F3.stream/2` on the committed fixtures. It does not download data and it is not a CI gate. `mix test` excludes the `:minio` tag unless `F3_MINIO=1`.
 
 Regenerate fixtures with `scripts/fixtures/generate.sh`. That script clones the pinned upstream commit, builds `fff-poc` with Rust `nightly-2025-02-24`, and rewrites `test/fixtures/`. It is not part of `mix test`.
 
@@ -46,10 +56,11 @@ Regenerate fixtures with `scripts/fixtures/generate.sh`. That script clones the 
 | Area | Status |
 | --- | --- |
 | Open and close a byte source | implemented |
+| HTTP range read | implemented, opt-in, no redirects |
 | Postscript, schema, and footer metadata | implemented |
 | Read rows, project, stream | implemented when `F3_BUILD_NATIVE=1` |
 | Write a local file | implemented when `F3_BUILD_NATIVE=1` |
-| Embedded Wasm execution | refused, and it does not run |
+| Embedded Wasm execution | opt-in with `wasm: :sandbox` |
 
 The package name `f3` returned 404 from the Hex API on 2026-11-03. Nothing has been published. Re-check Hex before any release.
 

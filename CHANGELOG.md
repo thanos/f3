@@ -31,3 +31,7 @@ Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads
 - Tutorial 6 is technically reviewed. The default script path leaves Wasm off.
 - `F3.Writer` writes a local file through an out-of-process `fff-poc` helper on `nightly-2025-02-24`. The NIF does not link `fff-poc`. `close/1` renames a temp file onto the destination. Without `F3_BUILD_NATIVE=1`, a valid open returns `:not_implemented` and creates nothing.
 - Tutorial 5 is technically reviewed. The default script path prints that the writer is not loaded.
+- `F3.IO.HTTP` reads an object with one `HEAD` and ranged `GET`s. Redirects are refused. `lib_urls` are not fetched. SigV4 is used only when the six signing options are set. The writer stays on a local temp file.
+- `scripts/bench.exs` records wall time for the committed fixtures. It does not download data and it is not a CI check.
+- Hex `files` includes the writer helper sources. Precompiled NIFs stay off. Version remains `0.0.1`. Hex has not been published.
+- Tutorials 7–9 are technically reviewed. They are not ready to publish.

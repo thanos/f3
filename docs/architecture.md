@@ -14,7 +14,7 @@ flowchart LR
 
 ## Components
 
-`F3` is the public module. `open/2` builds an `F3.File` around either `F3.IO.Local` or `F3.IO.Memory`. `close/1` returns the updated handle and is idempotent on that handle. `schema/1`, `metadata/1`, and `inspect/2` decode the tail when the handle is open. `read/2` returns columnar batches. `stream/2` returns a stream and does not pread until the first pull.
+`F3` is the public module. `open/2` builds an `F3.File` around `F3.IO.Local`, `F3.IO.Memory`, or `F3.IO.HTTP`. The HTTP source is opt-in. It sends one `HEAD`, then one ranged `GET` per `pread/3`, and it does not follow redirects. `close/1` returns the updated handle and is idempotent on that handle. `schema/1`, `metadata/1`, and `inspect/2` decode the tail when the handle is open. `read/2` returns columnar batches. `stream/2` returns a stream and does not pread until the first pull.
 
 `F3.Format` holds the pinned magic, the 32-byte postscript layout, and `compatible?/2`. The only accepted wire version is 0.1. `F3.Postscript` reads that layout, rejects a short tail, a bad magic, any other version, a compressed footer, and a claimed size past the file or past `max_metadata_bytes:`. The default cap is 16 MiB and is an argument, not a process global.
 
@@ -28,7 +28,7 @@ There is no `Application` callback, no supervision tree, and no process registry
 
 ## What stays off
 
-Wasm stays opt-in. A shared dictionary is still `:unsupported_encoding`. A local dictionary is gathered in Elixir after the NIF returns the values and the indexes. `lib_urls` stay unread. The writer does not embed Wasm.
+Wasm stays opt-in. A shared dictionary is still `:unsupported_encoding`. A local dictionary is gathered in Elixir after the NIF returns the values and the indexes. `lib_urls` stay unread. An HTTP source does not fetch them and does not follow redirects. The writer does not embed Wasm and does not write to a remote URL.
 
 ## Fixture path
 

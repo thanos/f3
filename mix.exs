@@ -27,7 +27,7 @@ defmodule F3.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :inets, :ssl, :public_key, :crypto]
     ]
   end
 
@@ -44,12 +44,14 @@ defmodule F3.MixProject do
   # Runs from project/0, before Mix has pushed this config, so the helper
   # must not call Mix.Project.build_structure/0. Compile later symlinks priv.
   defp install_writer do
+    alias F3.Writer.Build
+
     if System.get_env("F3_BUILD_NATIVE") == "1" do
-      unless Code.ensure_loaded?(F3.Writer.Build) do
+      unless Code.ensure_loaded?(Build) do
         Code.compile_file(Path.join(__DIR__, "native/f3_write/build.ex"))
       end
 
-      F3.Writer.Build.install!()
+      Build.install!()
     end
   end
 
@@ -94,6 +96,10 @@ defmodule F3.MixProject do
         native/f3_native/src
         native/f3_native/Cargo.toml
         native/f3_native/README.md
+        native/f3_write/src
+        native/f3_write/build.ex
+        native/f3_write/Cargo.toml
+        native/f3_write/rust-toolchain.toml
         mix.exs
         README.md
         LICENSE
@@ -138,12 +144,18 @@ defmodule F3.MixProject do
         {"docs/tutorials/05-writing-f3-from-elixir.md", [title: "Writing F3 from Elixir"]},
         {"docs/tutorials/06-custom-encodings-and-wasm.md",
          [title: "Taking the decoder with the data"]},
+        {"docs/tutorials/07-f3-arrow-and-parquet.md", [title: "F3, Apache Arrow, and Parquet"]},
+        {"docs/tutorials/08-a-safe-reader-on-the-beam.md",
+         [title: "Building a safe binary-file reader on the BEAM"]},
+        {"docs/tutorials/09-performance-and-what-remains-experimental.md",
+         [title: "Performance, compatibility, and what remains experimental"]},
         {"docs/tutorials/publication-plan.md", [title: "Publication plan"]},
         {"docs/test-reports/stage-0.md", [title: "Stage 0 test report"]},
         {"docs/test-reports/stage-1.md", [title: "Stage 1 test report"]},
         {"docs/test-reports/stage-2.md", [title: "Stage 2 test report"]},
         {"docs/test-reports/stage-3.md", [title: "Stage 3 test report"]},
-        {"docs/test-reports/stage-4.md", [title: "Stage 4 test report"]}
+        {"docs/test-reports/stage-4.md", [title: "Stage 4 test report"]},
+        {"docs/test-reports/stage-5.md", [title: "Stage 5 test report"]}
       ]
     ]
   end

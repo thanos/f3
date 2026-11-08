@@ -37,8 +37,16 @@ Upstream F3 is a research prototype. This library is experimental. Treat every `
 - `wasm:` defaults to `:off`. `CUSTOM_WASM` is `:unsupported_encoding`. The `WASMBinaries` section is not read. Metadata inspection never compiles a module.
 - `:sandbox` is the only other accepted value. The host is Wasmtime 28 on the dirty CPU scheduler. A module is at most 1 MiB unless `wasm_module_bytes:` raises it, and never above 16 MiB. The pinned built-in module is 10_661_135 bytes, which is why the ceiling is 16 MiB rather than 8 MiB. Linear memory is at most 8 MiB. Fuel is 5_000_000 instructions. Upstream sets no fuel. Exhaustion is `:resource_limit`. An omitted `wasm_id` is the FlatBuffers default 0.
 - WASI stdout and stderr are sinks. There is no preopened directory and the process environment is not inherited. `path_open` and socket imports are refused before instantiation.
-- `lib_urls` are not parsed and not fetched. No HTTP client is on the read path.
+- `lib_urls` are not parsed and not fetched. Metadata inspection does not open a socket. Stage 5 adds an opt-in HTTP source that is not used for a local file.
 - A registered `F3.Extension` is this library's policy. An error from it is returned as-is and does not fall through into Wasm.
+
+## What Stage 5 enforces
+
+- A remote read is opt-in: `source: {:http, url}` or `source: {:http, url, opts}`. Opening a local path does not contact the network. `lib_urls` are not turned into requests.
+- The client sets `autoredirect: false`. Status 301, 302, 303, 307, and 308 are `:io` with reason `:redirect`.
+- A body shorter than the requested range is `:truncated`. A status other than 200 or 206 is `:io`, except 404, which is `:not_found`. A timeout, or a body larger than the request, is `:resource_limit`.
+- `Inspect` for `F3.IO.HTTP` prints the url and the size. It does not print headers or a signing secret. `%F3.Error{}` does not store that secret.
+- `F3.Writer` does not grow a remote path. `close/1` is still a local rename.
 
 ## What later stages must keep
 
