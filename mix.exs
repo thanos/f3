@@ -126,14 +126,40 @@ defmodule F3.MixProject do
   defp docs do
     [
       main: "readme",
+      before_closing_body_tag: &before_closing_body_tag/1,
+      groups_for_extras: [
+        "User guide": [~r/docs\/guide\//, "docs/architecture.md", "docs/examples.livemd"],
+        Contributing: [
+          "CHANGELOG.md",
+          "docs/contributing.md",
+          ~r/docs\/upstream-compatibility/,
+          ~r/docs\/security/,
+          ~r/docs\/feature-matrix/,
+          ~r/docs\/decisions\//
+        ],
+        Background: [~r/docs\/tutorials\//, ~r/docs\/test-reports\//]
+      ],
       extras: [
         {"README.md", [filename: "readme", title: "README"]},
-        {"docs/examples.livemd", [title: "Examples"]},
+        {"docs/guide/01-introduction.md", [title: "Introduction"]},
+        {"docs/guide/02-quick-start.md", [title: "Quick start"]},
+        {"docs/guide/03-configuration.md", [title: "Configuration"]},
+        {"docs/guide/04-f3-in-detail.md", [title: "F3 in detail"]},
+        {"docs/guide/05-writing.md", [title: "Writing"]},
+        {"docs/guide/06-reading.md", [title: "Reading"]},
+        {"docs/guide/07-streaming.md", [title: "Streaming"]},
+        {"docs/guide/08-decoders.md", [title: "Decoders"]},
+        {"docs/guide/09-wasm.md", [title: "Wasm"]},
+        {"docs/guide/10-interoperability.md", [title: "Interoperability"]},
+        {"docs/guide/11-status-and-roadmap.md", [title: "Status and roadmap"]},
+        {"docs/architecture.md", [title: "Architecture"]},
+        {"docs/guide/13-examples.md", [title: "Examples"]},
+        {"docs/examples.livemd", [title: "Livebook"]},
+        {"docs/contributing.md", [title: "Building from source"]},
         {"CHANGELOG.md", [title: "Changelog"]},
         {"docs/upstream-compatibility.md", [title: "Upstream compatibility"]},
-        {"docs/architecture.md", [title: "Architecture"]},
-        {"docs/feature-matrix.md", [title: "Feature matrix"]},
         {"docs/security.md", [title: "Security"]},
+        {"docs/feature-matrix.md", [title: "Feature matrix"]},
         {"docs/decisions/0001-hybrid-elixir-rust.md", [title: "ADR 0001"]},
         {"docs/tutorials/README.md", [filename: "tutorials", title: "Tutorials"]},
         {"docs/tutorials/01-why-f3.md", [title: "Why F3?"]},
@@ -160,4 +186,10 @@ defmodule F3.MixProject do
       ]
     ]
   end
+
+  defp before_closing_body_tag(:html) do
+    Path.join(__DIR__, "docs/exdoc_mermaid.html") |> File.read!()
+  end
+
+  defp before_closing_body_tag(_format), do: ""
 end
