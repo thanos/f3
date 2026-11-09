@@ -8,6 +8,9 @@
 # informational-fixtures regenerates fixtures from upstream and runs only on
 # workflow_dispatch. Required jobs check the committed manifest. They do not
 # clone Vortex or Lance.
+#
+# OTP is pinned to 28.3.1. A bare "28" installs the newest 28.x, and the
+# macOS asset for OTP-28.5.0.8 returns HTTP 504. 28.3.1 is still NIF 2.17.
 
 name: CI
 
@@ -29,7 +32,7 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.20.2"
-          otp-version: "28"
+          otp-version: "28.3.1"
       - run: mix deps.get
       - run: mix ci
 
@@ -45,7 +48,7 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.20.2"
-          otp-version: "28"
+          otp-version: "28.3.1"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2025-11-15
@@ -75,7 +78,7 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.20.2"
-          otp-version: "28"
+          otp-version: "28.3.1"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2025-11-15
