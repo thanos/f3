@@ -14,12 +14,12 @@ A git checkout compiles Rust only when `F3_BUILD_NATIVE=1`. Hex has not been pub
 
 ## Releases
 
-Pushing a tag `vX.Y.Z` that matches `@version` in `mix.exs` runs `.github/workflows/precompile.yml`. That workflow builds the NIF and the `f3_write` helper and attaches the archives to the GitHub release:
+Pushing a tag `vX.Y.Z` that matches `@version` in `mix.exs` runs `.github/workflows/ci.yml`. That is the same workflow as a pull request. After the tests pass, the decode job packages the NIF and the `f3_write` helper:
 
 - `aarch64-apple-darwin` on `macos-15`
 - `x86_64-unknown-linux-gnu` on `ubuntu-latest`
 
-The NIF archive is `libf3_native-vVERSION-nif-2.17-TARGET.so.tar.gz`. OTP 28 uses NIF version 2.17. The writer archive is `f3_write-vVERSION-TARGET.tar.gz`. `.github/workflows/publish.yml` then writes `checksum-Elixir.F3.Native.exs` and `checksum-f3_write.exs` and runs `mix hex.publish`. A local `mix hex.publish --dry-run` omits those files. The publish job writes them first, and the package list picks up whatever `checksum-*.exs` files are present. It sets `F3_SKIP_NATIVE_FETCH=1` so that publish packages the checksums without downloading the archives again. The repository secret `HEX_API_KEY` is required. Those checksum files are not in git. A Hex install downloads the archives for the two targets above. `F3_BUILD_NATIVE=1` still compiles from source, including for any other target.
+The NIF archive is `libf3_native-vVERSION-nif-2.17-TARGET.so.tar.gz`. OTP 28 uses NIF version 2.17. The writer archive is `f3_write-vVERSION-TARGET.tar.gz`. The release job in `.github/workflows/ci.yml` attaches those archives to the GitHub release. The publish job then writes `checksum-Elixir.F3.Native.exs` and `checksum-f3_write.exs` and runs `mix hex.publish`. A local `mix hex.publish --dry-run` omits those files. The publish job writes them first, and the package list picks up whatever `checksum-*.exs` files are present. It sets `F3_SKIP_NATIVE_FETCH=1` so that publish packages the checksums without downloading the archives again. The repository secret `HEX_API_KEY` is required. Those checksum files are not in git. A Hex install downloads the archives for the two targets above. `F3_BUILD_NATIVE=1` still compiles from source, including for any other target.
 
 ```shell
 F3_BUILD_NATIVE=1 mix compile
