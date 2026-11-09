@@ -9,8 +9,9 @@
 # workflow_dispatch. Required jobs check the committed manifest. They do not
 # clone Vortex or Lance.
 #
-# OTP is pinned to 28.3.1. A bare "28" installs the newest 28.x, and the
-# macOS asset for OTP-28.5.0.8 returns HTTP 504. 28.3.1 is still NIF 2.17.
+# Linux installs OTP 28.3.1 from Hex builds. macOS skips setup-beam and
+# uses Homebrew erlang@28: the otp_builds release assets return HTTP 504.
+# Both are OTP 28, NIF 2.17. Elixir is 1.20.2.
 
 name: CI
 
@@ -30,9 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
+        if: runner.os != 'macOS'
         with:
           elixir-version: "1.20.2"
           otp-version: "28.3.1"
+      - name: Set up Elixir
+        if: runner.os == 'macOS'
+        run: bash scripts/ci/setup_macos_beam.sh
       - run: mix deps.get
       - run: mix ci
 
@@ -46,9 +51,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
+        if: runner.os != 'macOS'
         with:
           elixir-version: "1.20.2"
           otp-version: "28.3.1"
+      - name: Set up Elixir
+        if: runner.os == 'macOS'
+        run: bash scripts/ci/setup_macos_beam.sh
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2025-11-15
@@ -76,9 +85,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
+        if: runner.os != 'macOS'
         with:
           elixir-version: "1.20.2"
           otp-version: "28.3.1"
+      - name: Set up Elixir
+        if: runner.os == 'macOS'
+        run: bash scripts/ci/setup_macos_beam.sh
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2025-11-15
