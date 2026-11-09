@@ -24,7 +24,7 @@ defmodule F3.Native do
   @checksum_file Path.expand("../../checksum-Elixir.F3.Native.exs", __DIR__)
   @external_resource @checksum_file
   @build_native System.get_env("F3_BUILD_NATIVE") == "1"
-  @precompiled File.regular?(@checksum_file)
+  @precompiled File.regular?(@checksum_file) and System.get_env("F3_SKIP_NATIVE_FETCH") != "1"
   @load_native @build_native or @precompiled
 
   if @precompiled and not @build_native do

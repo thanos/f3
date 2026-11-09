@@ -74,6 +74,9 @@ jobs:
       - name: Publish
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+          # The archives are already in assets/. Curl to the release CDN
+          # returns HTTP 504, so package the checksums without fetching again.
+          F3_SKIP_NATIVE_FETCH: "1"
         run: |
           set -euo pipefail
           if [ -z "${HEX_API_KEY}" ]; then

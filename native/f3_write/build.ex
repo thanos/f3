@@ -132,7 +132,12 @@ defmodule F3.Writer.Build do
     archive = Path.join(System.tmp_dir!(), name)
     curl = System.find_executable("curl") || raise "downloading f3_write requires curl"
 
-    {log, status} = System.cmd(curl, ["-fsSL", "-o", archive, url], stderr_to_stdout: true)
+    {log, status} =
+      System.cmd(
+        curl,
+        ["--retry", "5", "--retry-all-errors", "--retry-delay", "2", "-fsSL", "-o", archive, url],
+        stderr_to_stdout: true
+      )
 
     if status != 0 do
       File.rm(archive)

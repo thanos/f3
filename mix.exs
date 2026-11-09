@@ -57,15 +57,26 @@ defmodule F3.MixProject do
 
   # A Hex package ships checksum-f3_write.exs and downloads the helper.
   # This checkout has no checksum file, so Mix compiles the helper only
-  # when F3_BUILD_NATIVE=1.
+  # when F3_BUILD_NATIVE=1. The publish job sets F3_SKIP_NATIVE_FETCH so
+  # it can package those checksums without downloading the archives again.
   defp writer_requested? do
     System.get_env("F3_BUILD_NATIVE") == "1" or
-      File.regular?(Path.join(__DIR__, "checksum-f3_write.exs"))
+      (File.regular?(Path.join(__DIR__, "checksum-f3_write.exs")) and
+         System.get_env("F3_SKIP_NATIVE_FETCH") != "1")
   end
 
   defp stamp_native_flag do
     path = Path.join(__DIR__, "native/f3_native/.f3_build_native")
-    stamp = System.get_env("F3_BUILD_NATIVE") || "0"
+
+    stamp =
+      Enum.join(
+        [
+          System.get_env("F3_BUILD_NATIVE") || "0",
+          System.get_env("F3_SKIP_NATIVE_FETCH") || "0"
+        ],
+        "\n"
+      )
+
     previous = if File.regular?(path), do: File.read!(path), else: nil
 
     if previous != stamp do
