@@ -15,6 +15,7 @@ erl_crash.dump
 # Native crate build
 /native/f3_native/target/
 /native/f3_native/.f3_build_native
+/native/f3_native/.f3_skip_native_fetch
 /priv/native/
 
 # Fixture generator build

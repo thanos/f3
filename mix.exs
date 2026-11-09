@@ -66,17 +66,19 @@ defmodule F3.MixProject do
   end
 
   defp stamp_native_flag do
-    path = Path.join(__DIR__, "native/f3_native/.f3_build_native")
+    # .f3_build_native stays "1" or "0". F3.Writer and the native tests
+    # read that exact text. The skip flag has its own file so a publish
+    # compile still rebuilds F3.Native.
+    write_stamp("native/f3_native/.f3_build_native", System.get_env("F3_BUILD_NATIVE") || "0")
 
-    stamp =
-      Enum.join(
-        [
-          System.get_env("F3_BUILD_NATIVE") || "0",
-          System.get_env("F3_SKIP_NATIVE_FETCH") || "0"
-        ],
-        "\n"
-      )
+    write_stamp(
+      "native/f3_native/.f3_skip_native_fetch",
+      System.get_env("F3_SKIP_NATIVE_FETCH") || "0"
+    )
+  end
 
+  defp write_stamp(relative, stamp) do
+    path = Path.join(__DIR__, relative)
     previous = if File.regular?(path), do: File.read!(path), else: nil
 
     if previous != stamp do

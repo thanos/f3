@@ -20,6 +20,7 @@ defmodule F3.Native do
   """
 
   @external_resource Path.expand("../../native/f3_native/.f3_build_native", __DIR__)
+  @external_resource Path.expand("../../native/f3_native/.f3_skip_native_fetch", __DIR__)
   @external_resource Path.expand("../../native/f3_write/src/main.rs", __DIR__)
   @checksum_file Path.expand("../../checksum-Elixir.F3.Native.exs", __DIR__)
   @external_resource @checksum_file
