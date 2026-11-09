@@ -1,7 +1,7 @@
 defmodule F3.MixProject do
   use Mix.Project
 
-  @version "0.0.1"
+  @version "0.1.0"
   @upstream "https://github.com/future-file-format/F3"
   @paper "https://doi.org/10.1145/3749163"
 
@@ -125,9 +125,10 @@ defmodule F3.MixProject do
 
   defp docs do
     [
-      main: "overview",
+      main: "readme",
       extras: [
-        {"README.md", [filename: "overview", title: "Overview"]},
+        {"README.md", [filename: "readme", title: "README"]},
+        {"docs/examples.livemd", [title: "Examples"]},
         {"CHANGELOG.md", [title: "Changelog"]},
         {"docs/upstream-compatibility.md", [title: "Upstream compatibility"]},
         {"docs/architecture.md", [title: "Architecture"]},

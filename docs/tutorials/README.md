@@ -1,6 +1,6 @@
 # F3 tutorials
 
-Nine articles are in the tree. A missing file would be a backlog entry. Do not treat a missing file as a finished article.
+Nine articles are in the tree. A missing file would be a backlog entry. Do not treat a missing file as a finished article. Runnable API examples for library version `0.1.0` are in `docs/examples.livemd`.
 
 | # | Title | Status | File |
 | --- | --- | --- | --- |

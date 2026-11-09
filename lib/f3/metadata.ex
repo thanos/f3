@@ -74,6 +74,17 @@ defmodule F3.Metadata do
 
   @doc """
   Map compared with the committed upstream golden files.
+
+  Keys are strings. Column payloads are not included. A value that is not
+  metadata raises `FunctionClauseError`.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, meta} = F3.metadata(file)
+      iex> map = F3.Metadata.to_map(meta)
+      iex> map["postscript"]["major_version"]
+      0
   """
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = meta) do

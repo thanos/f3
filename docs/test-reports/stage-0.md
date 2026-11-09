@@ -36,7 +36,7 @@ F3_BUILD_NATIVE=1 mix test test/f3/contract_test.exs
 12 passed (3 doctests, 9 tests)
 ```
 
-`priv/native/f3_native.so` is a Mach-O arm64 dylib. `F3.Native.info/0` returned `{:ok, {"f3_native", "0.0.1"}}` under that test. A later `mix compile --force` without the flag restored the default beam, and `mix test` passed again with `available?/0` false.
+`priv/native/f3_native.so` is a Mach-O arm64 dylib. `F3.Native.info/0` returned `{:ok, {"f3_native", "0.0.1"}}` under that test. The crate version is now `0.1.0`. A later `mix compile --force` without the flag restored the default beam, and `mix test` passed again with `available?/0` false.
 
 Fixture generation:
 

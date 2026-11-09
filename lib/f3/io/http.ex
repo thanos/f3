@@ -27,6 +27,14 @@ defmodule F3.IO.HTTP do
   @enforce_keys [:url, :display_url, :size, :headers, :timeout, :signer]
   defstruct [:url, :display_url, :size, :headers, :timeout, :signer, closed: false]
 
+  @typedoc """
+  One HTTP source.
+
+  `url` is the request URL. `display_url` is that URL with userinfo removed.
+  `size` is the `Content-Length` from HEAD. `headers` are the caller headers.
+  `timeout` is the request timeout in milliseconds. `signer` is the optional
+  arity-3 function, or `nil`. `closed` drops the signer and headers.
+  """
   @type t :: %__MODULE__{
           url: String.t(),
           display_url: String.t(),
@@ -45,6 +53,24 @@ defmodule F3.IO.HTTP do
 
   See the module docs for `opts`. When the six signing keys are set, `url`
   is not requested. The path-style object URL is.
+
+  A non-http URL, a partial key set, a bad `sign:`, and `timeout_ms` that
+  is not a positive integer are `:invalid_argument` and do not raise.
+  Combining `sign:` with the six keys is the same error.
+
+  ## Examples
+
+      iex> {:error, error} = F3.IO.HTTP.open("ftp://example.test/a")
+      iex> error.category
+      :invalid_argument
+
+      iex> {:error, error} = F3.IO.HTTP.open("http://example.test/a", timeout_ms: 0)
+      iex> error.message
+      "timeout_ms must be a positive integer"
+
+      iex> {:error, error} = F3.IO.HTTP.open("http://example.test/a", bucket: "b")
+      iex> error.message
+      "signed request needs endpoint, bucket, key, region, access_key, and secret_key"
   """
   @spec open(String.t(), keyword()) :: {:ok, t()} | {:error, F3.Error.t()}
   def open(url, opts \\ [])
@@ -65,10 +91,46 @@ defmodule F3.IO.HTTP do
     {:error, F3.Error.invalid_argument(:open, "http url must be a binary")}
   end
 
+  @doc """
+  Size from the HEAD response. A closed handle is `:closed`.
+
+  ## Examples
+
+      iex> state = %F3.IO.HTTP{
+      ...>   url: "http://example.test/a",
+      ...>   display_url: "http://example.test/a",
+      ...>   size: 4,
+      ...>   headers: [],
+      ...>   timeout: 10_000,
+      ...>   signer: nil
+      ...> }
+      iex> F3.IO.HTTP.size(state)
+      {:ok, 4}
+  """
   @impl true
   def size(%__MODULE__{closed: true}), do: {:error, F3.Error.closed(:size)}
   def size(%__MODULE__{size: size}), do: {:ok, size}
 
+  @doc """
+  One ranged GET. A closed handle is `:closed`. A negative offset or length
+  is `:invalid_argument`. A start at or past `size` is `{:ok, ""}` and does
+  not send a request.
+
+  ## Examples
+
+      iex> state = %F3.IO.HTTP{
+      ...>   url: "http://example.test/a",
+      ...>   display_url: "http://example.test/a",
+      ...>   size: 4,
+      ...>   headers: [],
+      ...>   timeout: 10_000,
+      ...>   signer: nil,
+      ...>   closed: true
+      ...> }
+      iex> {:error, error} = F3.IO.HTTP.pread(state, 0, 1)
+      iex> error.category
+      :closed
+  """
   @impl true
   def pread(%__MODULE__{closed: true}, _offset, _length), do: {:error, F3.Error.closed(:pread)}
 
@@ -92,6 +154,23 @@ defmodule F3.IO.HTTP do
     end
   end
 
+  @doc """
+  Marks the handle closed and drops headers and the signer.
+
+  ## Examples
+
+      iex> state = %F3.IO.HTTP{
+      ...>   url: "http://example.test/a",
+      ...>   display_url: "http://example.test/a",
+      ...>   size: 4,
+      ...>   headers: [{"authorization", "redacted"}],
+      ...>   timeout: 10_000,
+      ...>   signer: nil
+      ...> }
+      iex> {:ok, closed} = F3.IO.HTTP.close(state)
+      iex> {closed.closed, closed.headers, closed.signer}
+      {true, [], nil}
+  """
   @impl true
   def close(%__MODULE__{closed: true} = state), do: {:ok, state}
   def close(%__MODULE__{} = state), do: {:ok, %{state | closed: true, signer: nil, headers: []}}

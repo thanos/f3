@@ -12,6 +12,12 @@ defmodule F3 do
   `max_metadata_bytes` on the metadata calls caps the postscript size fields.
   The default is `F3.Postscript.max_metadata_bytes/0`.
 
+  These functions return `{:error, %F3.Error{}}` for a missing file, a closed
+  handle, a bad option, or a footer this build will not decode. They do not
+  raise for those cases. `stream/2` returns that error before a stream when
+  the native decoder is not loaded. A later pull that cannot decode throws
+  `{:f3, %F3.Error{}}`.
+
   A memory source is `open(path, source: {:memory, binary})` or
   `open({:memory, binary})`. When the `:source` option is a memory binary,
   `path` is not opened. An HTTP source is `open(path, source: {:http, url})`
@@ -31,6 +37,29 @@ defmodule F3 do
   The returned handle is not validated as F3. Missing local paths and missing
   HTTP objects return `{:error, %F3.Error{category: :not_found}}`. HTTP options
   live inside `{:http, url, opts}`.
+
+  `opts` for a path may contain `:source`. A memory tuple accepts no options.
+  `:source` is `:file` (the default), `{:memory, binary}`, `{:http, url}`, or
+  `{:http, url, http_opts}`. HTTP options are `headers:`, `timeout_ms:`
+  (default 10_000), `sign:`, and the six SigV4 keys. See `F3.IO.HTTP`.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> file.origin
+      "test/fixtures/small.f3"
+
+      iex> {:ok, memory} = F3.open("unused", source: {:memory, <<1, 2>>})
+      iex> memory.origin
+      :memory
+
+      iex> {:error, missing} = F3.open("missing-file.f3")
+      iex> missing.category
+      :not_found
+
+      iex> {:error, bad} = F3.open("unused", source: {:http, "ftp://example.test/a"})
+      iex> bad.message
+      "http url must be http or https"
   """
   @spec open(Path.t() | {:memory, binary()}, keyword()) ::
           {:ok, F3.File.t()} | {:error, F3.Error.t()}
@@ -58,6 +87,20 @@ defmodule F3 do
 
   @doc """
   Releases the source. Closing a closed handle returns `{:ok, file}`.
+  A value that is not an `F3.File` is `:invalid_argument`. This does not raise.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, closed} = F3.close(file)
+      iex> closed.closed
+      true
+      iex> {:ok, again} = F3.close(closed)
+      iex> again.closed
+      true
+      iex> {:error, error} = F3.close(:nope)
+      iex> error.message
+      "expected an F3.File"
   """
   @spec close(F3.File.t()) :: {:ok, F3.File.t()} | {:error, F3.Error.t()}
   def close(%F3.File{closed: true} = file), do: {:ok, file}
@@ -76,7 +119,16 @@ defmodule F3 do
   @doc """
   Returns the logical schema from the footer.
 
-  `max_metadata_bytes` overrides the allocation cap for this call.
+  `max_metadata_bytes` overrides the allocation cap for this call. It must be
+  a non-negative integer. The default is 16_777_216. A closed file is
+  `:closed`. A short file is `:truncated`.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, schema} = F3.schema(file, max_metadata_bytes: 1_048_576)
+      iex> Enum.map(schema.fields, & &1.name)
+      ["trade_id", "symbol", "price"]
   """
   @spec schema(F3.File.t(), keyword()) :: {:ok, F3.Schema.t()} | {:error, F3.Error.t()}
   def schema(file, opts \\ [])
@@ -96,6 +148,13 @@ defmodule F3 do
 
   Checksums are reported and not verified. Wasm sections are offsets only.
   `max_metadata_bytes` overrides the allocation cap for this call.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, meta} = F3.metadata(file)
+      iex> {meta.major_version, meta.minor_version, length(meta.row_groups)}
+      {0, 1, 1}
   """
   @spec metadata(F3.File.t(), keyword()) :: {:ok, F3.Metadata.t()} | {:error, F3.Error.t()}
   def metadata(file, opts \\ [])
@@ -128,6 +187,14 @@ defmodule F3 do
   One native call decodes a whole encoding unit. Elixir slices it to
   `batch_size`. These fixtures are smaller than one unit. Without the native
   decoder this returns `:native_unavailable` and does not read the payload.
+  A bad option is `:invalid_argument` and does not raise.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:error, error} = F3.read(file, columns: ["trade_id"], batch_size: 2)
+      iex> error.category
+      :native_unavailable
   """
   @spec read(F3.File.t(), keyword()) :: {:ok, [F3.Batch.t()]} | {:error, F3.Error.t()}
   def read(file, opts \\ []), do: F3.Reader.read(file, opts)
@@ -137,7 +204,15 @@ defmodule F3 do
 
   The stream does not pread until the first pull. `Enum.take/2` stops further
   reads. The caller still owns `close/1`. Options match `read/2`. A pull that
-  cannot decode throws `{:f3, %F3.Error{}}`.
+  cannot decode throws `{:f3, %F3.Error{}}`. Without the native decoder this
+  returns `{:error, %F3.Error{}}` and does not return a stream.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:error, error} = F3.stream(file, wasm: :off, row_groups: [0])
+      iex> error.message
+      "native decoder is not loaded"
   """
   @spec stream(F3.File.t(), keyword()) :: {:ok, Enumerable.t()} | {:error, F3.Error.t()}
   def stream(file, opts \\ []), do: F3.Reader.stream(file, opts)
@@ -151,6 +226,14 @@ defmodule F3 do
   map encoded as JSON. Neither form includes column payloads.
 
   `max_metadata_bytes` overrides the allocation cap for this call.
+  `detail` must be a boolean. `format` is `:text` or `:json`.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, text} = F3.inspect(file, detail: false, format: :text)
+      iex> text =~ "schema: trade_id int64, symbol utf8, price float64"
+      true
   """
   @spec inspect(F3.File.t(), keyword()) :: {:ok, String.t()} | {:error, F3.Error.t()}
   def inspect(file, opts \\ [])

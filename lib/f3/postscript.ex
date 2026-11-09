@@ -63,6 +63,11 @@ defmodule F3.Postscript do
 
   @doc """
   Default maximum metadata span, in bytes, for one `decode/2` call.
+
+  ## Examples
+
+      iex> F3.Postscript.max_metadata_bytes()
+      16_777_216
   """
   @spec max_metadata_bytes() :: pos_integer()
   def max_metadata_bytes, do: @max_metadata_bytes
@@ -73,7 +78,20 @@ defmodule F3.Postscript do
   `max_metadata_bytes` limits `metadata_size` and `footer_size`. Checksum
   type `0` is `:xxhash`. Any other byte is `{:unknown, byte}` and is not
   a reason to stop. Footer compression other than uncompressed is
-  `:unsupported_encoding`.
+  `:unsupported_encoding`. A file shorter than 32 bytes is `:truncated`.
+  `max` must be a non-negative integer. This does not raise for a short file.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, post} = F3.Postscript.decode(file, F3.Postscript.max_metadata_bytes())
+      iex> {post.major_version, post.minor_version, post.footer_compression}
+      {0, 1, :uncompressed}
+
+      iex> {:ok, short} = F3.open({:memory, "no"})
+      iex> {:error, error} = F3.Postscript.decode(short, 32)
+      iex> error.category
+      :truncated
   """
   @spec decode(F3.File.t(), non_neg_integer()) :: {:ok, t()} | {:error, Error.t()}
   def decode(%F3.File{source_module: module, source_state: state}, max)

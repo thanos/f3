@@ -21,25 +21,57 @@ defmodule F3.Format do
 
   @doc """
   Full upstream commit this build is compatible with.
+
+  ## Examples
+
+      iex> F3.Format.upstream_sha()
+      "bd92506447dc1333820cfe9a34ebbf497fe0219e"
   """
   @spec upstream_sha() :: String.t()
   def upstream_sha, do: @upstream_sha
 
   @doc """
   Two-byte magic that terminates a file.
+
+  ## Examples
+
+      iex> F3.Format.magic()
+      "F3"
   """
   @spec magic() :: <<_::16>>
   def magic, do: @magic
 
   @doc """
   Postscript length in bytes, including the magic.
+
+  ## Examples
+
+      iex> F3.Format.postscript_size()
+      32
   """
   @spec postscript_size() :: 32
   def postscript_size, do: @postscript_size
 
+  @doc """
+  Wire major version this build accepts. The library version is a separate
+  number.
+
+  ## Examples
+
+      iex> F3.Format.major_version()
+      0
+  """
   @spec major_version() :: 0
   def major_version, do: @major_version
 
+  @doc """
+  Wire minor version this build accepts.
+
+  ## Examples
+
+      iex> F3.Format.minor_version()
+      1
+  """
   @spec minor_version() :: 1
   def minor_version, do: @minor_version
 
@@ -47,6 +79,11 @@ defmodule F3.Format do
   Postscript fields in file order. Widths sum to `postscript_size/0`.
 
   Integer fields are little-endian. `:magic` is the raw bytes `F3`.
+
+  ## Examples
+
+      iex> F3.Format.postscript_layout() |> Enum.map(&elem(&1, 1)) |> Enum.sum()
+      32
   """
   @spec postscript_layout() :: [layout_field()]
   def postscript_layout do

@@ -12,7 +12,7 @@ Recorded 2026-11-07 after the commands below. GitHub Actions has not been run fr
 | Native stamp | `0` for the benchmark and for `mix ci` |
 | Upstream | `bd92506447dc1333820cfe9a34ebbf497fe0219e` |
 
-The committed `.f3` fixtures were not regenerated. Hex was not published. Version stayed `0.0.1`.
+The committed `.f3` fixtures were not regenerated. Hex was not published. The library version is `0.1.0`.
 
 ## HTTP
 

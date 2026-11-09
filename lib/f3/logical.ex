@@ -11,6 +11,19 @@ defmodule F3.Logical do
 
   @doc """
   The logical tree and the Arrow schema describe the same nesting.
+
+  The tree must be `%{id: :struct, children: nodes}` with one child per
+  field. A flat child matches a primitive field. Any other shape is `false`.
+  This does not raise.
+
+  ## Examples
+
+      iex> field = %{name: "id", type: {:int, 64, true}, nullable: false}
+      iex> tree = %{id: :struct, children: [%{id: :flat, children: []}]}
+      iex> F3.Logical.matches?(tree, [field])
+      true
+      iex> F3.Logical.matches?(nil, [field])
+      false
   """
   @spec matches?(F3.Metadata.logical_tree() | nil, [F3.Schema.field()]) :: boolean()
   def matches?(%{id: :struct, children: children}, fields)
@@ -22,6 +35,18 @@ defmodule F3.Logical do
 
   @doc """
   Physical `{index, type}` pairs required by the named top-level fields.
+
+  `fields` is the schema. `names` selects top-level fields. A name that is
+  not present contributes no pairs. An unclaimed primitive is
+  `:unsupported_encoding`.
+
+  ## Examples
+
+      iex> field = %{name: "id", type: {:int, 64, true}, nullable: false}
+      iex> F3.Logical.needed([field], ["id"])
+      {:ok, [{0, :i64}]}
+      iex> F3.Logical.needed([field], ["other"])
+      {:ok, []}
   """
   @spec needed([F3.Schema.field()], [String.t()]) ::
           {:ok, [{non_neg_integer(), atom()}]} | {:error, F3.Error.t()}
@@ -34,6 +59,17 @@ defmodule F3.Logical do
 
   @doc """
   Builds logical columns for `names` from physical columns keyed by index.
+
+  `physical` maps a physical index to an `F3.Column`. A missing column is
+  an error. The result maps each requested name to its logical column.
+
+  ## Examples
+
+      iex> field = %{name: "id", type: {:int, 64, true}, nullable: false}
+      iex> {:ok, physical} = F3.Column.from_native(:i64, 1, <<5::little-64>>, nil)
+      iex> {:ok, %{"id" => column}} = F3.Logical.assemble([field], ["id"], %{0 => physical})
+      iex> F3.Column.value(column, 0)
+      5
   """
   @spec assemble([F3.Schema.field()], [String.t()], %{non_neg_integer() => F3.Column.t()}) ::
           {:ok, %{optional(String.t()) => F3.Column.t()}} | {:error, F3.Error.t()}

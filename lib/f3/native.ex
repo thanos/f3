@@ -57,12 +57,21 @@ defmodule F3.Native do
   if @build_native do
     @doc """
     Whether this VM loaded the native scaffold.
+
+    This returns `true` when `info/0` returns the crate name and version.
     """
     @spec available?() :: boolean()
     def available?, do: match?({:ok, {_crate, _version}}, info())
   else
     @doc """
     Whether this VM loaded the native scaffold.
+
+    The default build does not compile the NIF, so this is `false`.
+
+    ## Examples
+
+        iex> F3.Native.available?()
+        false
     """
     @spec available?() :: boolean()
     def available?, do: false
@@ -191,6 +200,14 @@ defmodule F3.Native do
   else
     @doc """
     Returns `{:ok, {crate_name, version}}` when the NIF is loaded.
+
+    This build has no NIF, so the result is `:native_unavailable`. It does
+    not raise.
+
+    ## Examples
+
+        iex> F3.Native.info()
+        {:error, :native_unavailable}
     """
     @spec info() :: {:ok, {String.t(), String.t()}} | {:error, :native_unavailable}
     def info, do: {:error, :native_unavailable}
@@ -228,6 +245,15 @@ defmodule F3.Native do
   if not @build_native do
     @doc """
     Decodes one encoding unit when the NIF was compiled.
+
+    `bytes` is the unit. `compression` is `:uncompressed`, `:zstd`, or
+    `:lz4`. `type` is the physical kind, such as `:i64`. This build returns
+    `{:error, :native_unavailable}` and does not raise.
+
+    ## Examples
+
+        iex> F3.Native.decode_encunit(<<>>, :uncompressed, :i64)
+        {:error, :native_unavailable}
     """
     @spec decode_encunit(binary(), atom(), atom()) :: {:error, :native_unavailable}
     def decode_encunit(_bytes, _compression, _type), do: {:error, :native_unavailable}

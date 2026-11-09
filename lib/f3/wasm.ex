@@ -25,18 +25,33 @@ defmodule F3.Wasm do
 
   @doc """
   Instruction budget passed to Wasmtime. Upstream sets no fuel.
+
+  ## Examples
+
+      iex> F3.Wasm.fuel()
+      5_000_000
   """
   @spec fuel() :: pos_integer()
   def fuel, do: @fuel
 
   @doc """
   Linear memory cap, in bytes.
+
+  ## Examples
+
+      iex> F3.Wasm.memory_bytes()
+      8_388_608
   """
   @spec memory_bytes() :: pos_integer()
   def memory_bytes, do: @memory_bytes
 
   @doc """
   Default maximum module size, in bytes.
+
+  ## Examples
+
+      iex> F3.Wasm.default_module_bytes()
+      1_048_576
   """
   @spec default_module_bytes() :: pos_integer()
   def default_module_bytes, do: @default_module_bytes
@@ -44,6 +59,11 @@ defmodule F3.Wasm do
   @doc """
   Hard maximum for `wasm_module_bytes:`. The pinned built-in module is
   larger than 8 MiB, so the ceiling is 16 MiB.
+
+  ## Examples
+
+      iex> F3.Wasm.max_module_bytes()
+      16_777_216
   """
   @spec max_module_bytes() :: pos_integer()
   def max_module_bytes, do: @max_module_bytes
@@ -51,6 +71,17 @@ defmodule F3.Wasm do
   @doc """
   Decodes one unit with the sandboxed host. The module bytes do not leave
   the NIF as an Arrow buffer. The return is an owned `F3.Column`.
+
+  `plan` must include `:operation`. A nested `type` is
+  `:unsupported_encoding` and does not load a module. A missing Wasm section
+  is `:corrupt`. This raises `KeyError` when `plan.operation` is absent.
+
+  ## Examples
+
+      iex> plan = %{operation: :read}
+      iex> {:error, error} = F3.Wasm.decode(plan, %{}, <<>>, :list)
+      iex> error.category
+      :unsupported_encoding
   """
   @spec decode(map(), map(), binary(), atom()) :: {:ok, F3.Column.t()} | {:error, Error.t()}
   def decode(plan, unit, bytes, type) do
@@ -64,6 +95,14 @@ defmodule F3.Wasm do
 
   @doc """
   Parses a `WASMBinaries` FlatBuffers root. Field `lib_urls` is not walked.
+  A buffer that is not a table is `:corrupt`. A non-binary raises no error
+  here. It returns the same `:corrupt` error.
+
+  ## Examples
+
+      iex> {:error, error} = F3.Wasm.modules(<<>>)
+      iex> error.message
+      "wasm section is truncated"
   """
   @spec modules(binary()) :: {:ok, [map()]} | {:error, Error.t()}
   def modules(bin) when is_binary(bin) do

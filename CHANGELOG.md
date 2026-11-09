@@ -2,7 +2,7 @@
 
 This library's version is independent of the upstream F3 wire version. Nothing here has been published to Hex.
 
-## [0.0.1] - Unreleased
+## [0.1.0] - Unreleased
 
 Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads and local writes need the optional native build. Wasm stays opt-in.
 
@@ -33,5 +33,5 @@ Experimental scaffold. Schema and footer metadata are decoded. CASCADE row reads
 - Tutorial 5 is technically reviewed. The default script path prints that the writer is not loaded.
 - `F3.IO.HTTP` reads an object with one `HEAD` and ranged `GET`s. Redirects are refused. `lib_urls` are not fetched. SigV4 is used only when the six signing options are set. The writer stays on a local temp file.
 - `scripts/bench.exs` records wall time for the committed fixtures. It does not download data and it is not a CI check.
-- Hex `files` includes the writer helper sources. Precompiled NIFs stay off. Version remains `0.0.1`. Hex has not been published.
+- Hex `files` includes the writer helper sources. Precompiled NIFs stay off. The library version is `0.1.0`. Hex has not been published.
 - Tutorials 7–9 are technically reviewed. They are not ready to publish.

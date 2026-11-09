@@ -5,7 +5,18 @@ defmodule F3.RowGroup do
   `columns` follows the column-metadata order for that row group. `name`
   is the matching schema field when the counts line up, and `nil` when
   they do not. Chunks are IOUnits. Each `encunits` entry is one encoding
-  unit. This struct does not contain column bytes.
+  unit.   This struct does not contain column bytes.
+
+  `index` is the row group index. `num_rows` is its row count.
+  `byte_offset` and `byte_size` locate it in the file. `columns` follows
+  the column-metadata order. A column `name` is the schema field when the
+  counts line up, and `nil` when they do not.
+
+  ## Examples
+
+      iex> group = %F3.RowGroup{index: 0, num_rows: 3, byte_offset: 0, byte_size: 10}
+      iex> group.columns
+      []
   """
 
   @type dictionary ::

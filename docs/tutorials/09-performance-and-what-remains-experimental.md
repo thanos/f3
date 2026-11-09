@@ -102,7 +102,7 @@ projection: all columns
 
 ## What remains experimental
 
-Version `0.0.1` has not been published to Hex. Precompiled NIFs are not part of the package. A source build needs `nightly-2025-11-15` for the NIF and `nightly-2025-02-24` plus a fetch of pinned `fff-poc` for the writer.
+Version `0.1.0` has not been published to Hex. Precompiled NIFs are not part of the package. A source build needs `nightly-2025-11-15` for the NIF and `nightly-2025-02-24` plus a fetch of pinned `fff-poc` for the writer.
 
 Still off, or only present when the caller opts in:
 

@@ -14,6 +14,11 @@ defmodule F3.Dispatch do
 
   @doc """
   Native CASCADE version this build decodes without Wasm.
+
+  ## Examples
+
+      iex> F3.Dispatch.cascade_version()
+      %{major: 0, minor: 21, patch: 0}
   """
   @spec cascade_version() :: %{major: 0, minor: 21, patch: 0}
   def cascade_version, do: @cascade
@@ -25,7 +30,20 @@ defmodule F3.Dispatch do
   Upstream runs Wasm for CASCADE when the file version is newer and the
   reader major is 0 or the majors differ. Native `0.21.0` has major 0, so
   any newer CASCADE version takes the Wasm path. An equal or older version
-  stays on the Vortex NIF. The committed fixtures are `0.21.0`.
+  stays on the Vortex NIF.   The committed fixtures are `0.21.0`.
+
+  A missing version is `:corrupt`. This does not raise for a map plan.
+
+  ## Examples
+
+      iex> unit = %{encoding: :cascade, compression: :uncompressed, wasm_id: nil}
+      iex> version = %{major: 0, minor: 21, patch: 0}
+      iex> plan = %{versions: [%{encoding: :cascade, version: version}], wasm: :off, operation: :read}
+      iex> F3.Dispatch.choose(unit, plan)
+      {:ok, :native}
+      iex> {:error, error} = F3.Dispatch.choose(unit, %{versions: [], operation: :read})
+      iex> error.category
+      :corrupt
   """
   @spec choose(map(), map()) ::
           {:ok, :native | :wasm | {:extension, module()}} | {:error, Error.t()}
@@ -43,6 +61,16 @@ defmodule F3.Dispatch do
 
   @doc """
   Whether this CASCADE version stays on the Vortex NIF.
+
+  `file` is `%{major, minor, patch}`. An equal or older version stays native.
+  A newer version with major 0 takes Wasm.
+
+  ## Examples
+
+      iex> F3.Dispatch.cascade_native?(%{major: 0, minor: 21, patch: 0})
+      true
+      iex> F3.Dispatch.cascade_native?(%{major: 0, minor: 22, patch: 0})
+      false
   """
   @spec cascade_native?(map()) :: boolean()
   def cascade_native?(file) when is_map(file) do

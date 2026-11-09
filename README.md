@@ -1,12 +1,14 @@
 # F3 for Elixir
 
-Experimental library for the [F3](https://github.com/future-file-format/F3) columnar file format. Upstream F3 is a research prototype. This package reads the postscript, the footer, and, when the native decoder is compiled, CASCADE row data. `CUSTOM_WASM` runs only when a read passes `wasm: :sandbox`. A local writer is available in that same native build.
+Experimental library, version 0.1.0, for the [F3](https://github.com/future-file-format/F3) columnar file format. Upstream F3 is a research prototype. This package reads the postscript, the footer, and, when the native decoder is compiled, CASCADE row data. `CUSTOM_WASM` runs only when a read passes `wasm: :sandbox`. A local writer is available in that same native build.
 
 The pinned upstream commit is `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The only wire version this build accepts is major 0, minor 1. See [docs/upstream-compatibility.md](docs/upstream-compatibility.md).
 
 ## What works
 
 `F3.open/2` and `F3.close/1` acquire and release a local file, an in-memory binary, or an opt-in HTTP range source. `F3.schema/1`, `F3.metadata/1`, and `F3.inspect/2` decode the footer. `F3.read/2` and `F3.stream/2` decode CASCADE units when the native decoder is loaded, and return `:native_unavailable` when it is not. `F3.Writer.open/2` writes a local file in that build. Without it, a valid open returns `:not_implemented` and creates no file. There is no application callback to start.
+
+The block below is the native build. On the default build, `F3.read/2` returns `:native_unavailable` and the schema and inspect calls still succeed.
 
 ```elixir
 {:ok, file} = F3.open("test/fixtures/small.f3")
@@ -64,4 +66,27 @@ Regenerate fixtures with `scripts/fixtures/generate.sh`. That script clones the 
 
 The package name `f3` returned 404 from the Hex API on 2026-11-03. Nothing has been published. Re-check Hex before any release.
 
-Tutorials: [docs/tutorials/README.md](docs/tutorials/README.md).
+Tutorials: [docs/tutorials/README.md](docs/tutorials/README.md). API examples: [docs/examples.livemd](docs/examples.livemd).
+
+## Roadmap
+
+Library version `0.1.0`. The only accepted wire version is major 0, minor 1. Hex has not been published.
+
+This version includes:
+
+- opening a local file, an in-memory binary, or an opt-in HTTP range source
+- postscript and footer inspection, including schema and checksums
+- row reads and streams through the Vortex NIF, with column and row-group selection
+- a local writer for the types in the status table, in a separate process
+- opt-in Wasm for `CUSTOM_WASM`
+
+Still outside this version:
+
+- a Hex release, and precompiled NIFs
+- shared dictionaries
+- signed `int8` and `int16`, `float16`, plain binary, decimal, dates, timestamps, maps, and Arrow dictionary columns
+- writes to a remote URL, and fetches of footer `lib_urls`
+- a required MinIO job, or a benchmark gate in CI
+- Linux arm64 and upstream's Intel Debian 12 image, which have not been run here
+
+Wasm generation stays off. The writer does not gain a remote path in this version.

@@ -32,7 +32,19 @@ defmodule F3.Registry do
         }
 
   @doc """
-  Starts an empty registry. `capacity:` defaults to #{@default_capacity}.
+  Starts an empty registry. `capacity:` defaults to #{@default_capacity}
+  and must be from 1 to #{@max_capacity}. Any other value is
+  `:invalid_argument` and does not start a process.
+
+  ## Examples
+
+      iex> {:ok, pid} = F3.Registry.start_link(capacity: 1)
+      iex> is_pid(pid)
+      true
+
+      iex> {:error, error} = F3.Registry.start_link(capacity: 0)
+      iex> error.category
+      :invalid_argument
   """
   @spec start_link(keyword()) :: {:ok, pid()} | {:error, Error.t()}
   def start_link(opts \\ []) when is_list(opts) do
@@ -48,6 +60,17 @@ defmodule F3.Registry do
   @doc """
   Registers `module` under the footer key. Replacing an existing key does
   not consume another slot.
+
+  `key` needs `:encoding` and `:version` with `:major`, `:minor`, and
+  `:patch`. `:wasm_id` is optional. A bad argument is `:invalid_argument`.
+
+  ## Examples
+
+      iex> {:ok, pid} = F3.Registry.start_link(capacity: 1)
+      iex> key = %{encoding: :custom_wasm, version: %{major: 1, minor: 0, patch: 0}}
+      iex> :ok = F3.Registry.register(pid, key, F3.Column)
+      iex> F3.Registry.lookup(pid, Map.put(key, :wasm_id, 0))
+      {:ok, F3.Column}
   """
   @spec register(pid(), key(), module()) :: :ok | {:error, Error.t()}
   def register(pid, key, module) when is_pid(pid) and is_atom(module) do
@@ -60,6 +83,13 @@ defmodule F3.Registry do
 
   @doc """
   Removes one key. A missing key is `:ok`.
+
+  ## Examples
+
+      iex> {:ok, pid} = F3.Registry.start_link()
+      iex> key = %{encoding: :cascade, version: %{major: 0, minor: 21, patch: 0}}
+      iex> F3.Registry.unregister(pid, key)
+      :ok
   """
   @spec unregister(pid(), key()) :: :ok | {:error, Error.t()}
   def unregister(pid, key) when is_pid(pid) do
@@ -70,7 +100,12 @@ defmodule F3.Registry do
   Finds a module for one encoding unit. `:error` when the pid is dead, the
   table is gone, or nothing matches. A registration that set `wasm_id`
   matches only that id. A registration that omitted it matches any id,
-  after the exact id is tried.
+  after the exact id is tried. `nil` is `:error` and does not raise.
+
+  ## Examples
+
+      iex> F3.Registry.lookup(nil, %{encoding: :cascade})
+      :error
   """
   @spec lookup(pid() | nil, map()) :: {:ok, module()} | :error
   def lookup(nil, _metadata), do: :error
@@ -99,6 +134,7 @@ defmodule F3.Registry do
 
   def lookup(_pid, _metadata), do: :error
 
+  @doc false
   @impl true
   def init(capacity) do
     table = :ets.new(:f3_registry, [:set, :public, {:read_concurrency, true}])
@@ -107,6 +143,7 @@ defmodule F3.Registry do
     {:ok, %{table: table, capacity: capacity}}
   end
 
+  @doc false
   @impl true
   def handle_call({:register, key, module}, _from, state) do
     case normalize(key) do
@@ -141,6 +178,7 @@ defmodule F3.Registry do
     end
   end
 
+  @doc false
   @impl true
   def terminate(_reason, state) do
     drop_ets(fn -> :ets.delete(:f3_registry_index, self()) end)

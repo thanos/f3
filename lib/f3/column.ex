@@ -29,6 +29,15 @@ defmodule F3.Column do
           | :list64
           | :struct
 
+  @typedoc """
+  One column.
+
+  `kind` selects the physical layout. `num_rows` is the logical row count.
+  `values` holds little-endian scalars, UTF-8 binaries, or list offsets.
+  `validity` is `nil` when every row is present, otherwise one byte per row.
+  `child` is the list element column. `children` and `names` are the struct
+  fields, in the same order.
+  """
   @type t :: %__MODULE__{
           kind: kind(),
           num_rows: non_neg_integer(),
@@ -45,6 +54,21 @@ defmodule F3.Column do
 
   @doc """
   Builds a column from the native decoder term.
+
+  `kind` is a primitive, `:bool`, `:utf8`, `:list32`, or `:list64`. `rows`
+  is the logical row count. `values` is the payload for that kind. `validity`
+  is `nil` or one byte per row, where `0` is null. A bad shape returns
+  `{:error, %F3.Error{category: :corrupt}}` and does not raise.
+
+  ## Examples
+
+      iex> {:ok, column} = F3.Column.from_native(:i64, 2, <<1::little-64, 2::little-64>>, nil)
+      iex> F3.Column.value(column, 1)
+      2
+
+      iex> {:error, error} = F3.Column.from_native(:nope, 0, <<>>, nil)
+      iex> error.category
+      :corrupt
   """
   @spec from_native(atom(), non_neg_integer(), term(), binary() | nil) ::
           {:ok, t()} | {:error, F3.Error.t()}
@@ -71,7 +95,16 @@ defmodule F3.Column do
   end
 
   @doc """
-  An empty column of a primitive or list kind.
+  An empty column of a primitive, boolean, UTF-8, or list kind.
+  An unknown kind raises `FunctionClauseError`.
+
+  ## Examples
+
+      iex> F3.Column.empty(:i64).num_rows
+      0
+
+      iex> F3.Column.empty(:utf8).values
+      []
   """
   @spec empty(kind()) :: t()
   def empty(:utf8) do
@@ -91,8 +124,17 @@ defmodule F3.Column do
   end
 
   @doc """
-  Struct column. `flags` is the boolean physical column. A false or null
-  flag makes that struct null.
+  Struct column. `names` are the child field names. `flags` is the boolean
+  physical column. A false or null flag makes that struct null. `children`
+  must have the same row count as `flags`. A mismatch is `:corrupt`.
+
+  ## Examples
+
+      iex> {:ok, flags} = F3.Column.from_native(:bool, 1, <<1>>, nil)
+      iex> {:ok, id} = F3.Column.from_native(:i64, 1, <<7::little-64>>, nil)
+      iex> {:ok, column} = F3.Column.struct(["id"], flags, [id])
+      iex> F3.Column.value(column, 0)
+      %{"id" => 7}
   """
   @spec struct([String.t()], t(), [t()]) :: {:ok, t()} | {:error, F3.Error.t()}
   def struct(names, %__MODULE__{kind: :bool, num_rows: rows} = flags, children)
@@ -118,6 +160,18 @@ defmodule F3.Column do
 
   @doc """
   List column from an offset vector and its child values.
+
+  `offsets` is `:list32` or `:list64` with `num_rows + 1` offsets. The last
+  offset must equal `child.num_rows`. A mismatch is `:corrupt`.
+
+  ## Examples
+
+      iex> offsets = <<0::little-32, 1::little-32>>
+      iex> {:ok, parent} = F3.Column.from_native(:list32, 1, offsets, nil)
+      iex> {:ok, child} = F3.Column.from_native(:i64, 1, <<4::little-64>>, nil)
+      iex> {:ok, column} = F3.Column.list(parent, child)
+      iex> F3.Column.value(column, 0)
+      [4]
   """
   @spec list(t(), t()) :: {:ok, t()} | {:error, F3.Error.t()}
   def list(%__MODULE__{kind: kind, num_rows: rows, values: offsets} = parent, child)
@@ -151,6 +205,16 @@ defmodule F3.Column do
   @doc """
   Whether `column` has the kind a logical field asked for.
   `:integer` accepts any integer width. That is the dictionary index path.
+  Any other kind must match exactly. This returns a boolean and does not raise
+  for a column.
+
+  ## Examples
+
+      iex> {:ok, column} = F3.Column.from_native(:i32, 0, <<>>, nil)
+      iex> F3.Column.matches?(column, :integer)
+      true
+      iex> F3.Column.matches?(column, :i64)
+      false
   """
   @spec matches?(t(), atom()) :: boolean()
   def matches?(%__MODULE__{kind: kind}, :integer) when kind in @integers, do: true
@@ -159,6 +223,18 @@ defmodule F3.Column do
 
   @doc """
   Appends two columns of the same kind along the row axis.
+  `nil` on the left returns the right column. Different kinds are `:corrupt`.
+
+  ## Examples
+
+      iex> {:ok, left} = F3.Column.from_native(:i64, 1, <<1::little-64>>, nil)
+      iex> {:ok, right} = F3.Column.from_native(:i64, 1, <<2::little-64>>, nil)
+      iex> {:ok, both} = F3.Column.concat(left, right)
+      iex> F3.Column.value(both, 1)
+      2
+      iex> {:ok, column} = F3.Column.concat(nil, right)
+      iex> column.num_rows
+      1
   """
   @spec concat(t() | nil, t()) :: {:ok, t()} | {:error, F3.Error.t()}
   def concat(nil, %__MODULE__{} = column), do: {:ok, column}
@@ -173,6 +249,15 @@ defmodule F3.Column do
 
   @doc """
   Rows `start` through `start + length`, exclusive of the end.
+  The range must fit in the column. A range past the end raises
+  `FunctionClauseError`.
+
+  ## Examples
+
+      iex> {:ok, column} = F3.Column.from_native(:i64, 2, <<1::little-64, 2::little-64>>, nil)
+      iex> sliced = F3.Column.slice(column, 1, 1)
+      iex> F3.Column.value(sliced, 0)
+      2
   """
   @spec slice(t(), non_neg_integer(), non_neg_integer()) :: t()
   def slice(%__MODULE__{num_rows: rows} = column, start, length)
@@ -183,6 +268,16 @@ defmodule F3.Column do
 
   @doc """
   The Elixir value of row `index`.
+
+  Integers and floats are numbers. Booleans are `true` or `false`. UTF-8 is
+  a binary. A struct is a map. A list is a list. A null row is `nil`.
+  An index past the column is not checked and may raise.
+
+  ## Examples
+
+      iex> {:ok, column} = F3.Column.from_native(:i64, 1, <<9::little-64>>, <<0>>)
+      iex> F3.Column.value(column, 0)
+      nil
   """
   @spec value(t(), non_neg_integer()) :: term()
   def value(%__MODULE__{kind: :utf8, values: values, validity: validity}, index) do
@@ -223,6 +318,18 @@ defmodule F3.Column do
 
   @doc """
   Replaces each index with the dictionary value at that position.
+
+  `index` must be an integer column. An index past `dict` is `:corrupt`.
+  This does not raise for a well-formed column.
+
+  ## Examples
+
+      iex> values = <<10::little-64, 20::little-64>>
+      iex> {:ok, dict} = F3.Column.from_native(:i64, 2, values, nil)
+      iex> {:ok, index} = F3.Column.from_native(:i32, 2, <<1::little-32, 0::little-32>>, nil)
+      iex> {:ok, taken} = F3.Column.gather(dict, index)
+      iex> F3.Column.value(taken, 0)
+      20
   """
   @spec gather(t(), t()) :: {:ok, t()} | {:error, F3.Error.t()}
   def gather(%__MODULE__{} = dict, %__MODULE__{} = index) do
