@@ -5,7 +5,7 @@
 **Estimated reading time:** 8 minutes, estimated from length, not from a timed reading.  
 **Upstream pin:** `bd92506447dc1333820cfe9a34ebbf497fe0219e`
 
-F3 is a research file format. The upstream project says not to use it in production. The Elixir library in this repository is an experiment on top of that prototype. It does not read rows yet. Nothing in this article is a measurement of Elixir throughput.
+F3 is a research file format. The upstream project says not to use it in production. The Elixir library in this repository is an experiment on top of that prototype. It reads rows when the native decoder is compiled. Nothing in this article is a measurement of Elixir throughput.
 
 ## Why look at another columnar format?
 
@@ -25,7 +25,7 @@ An **EncUnit** is a run of values that share one encoding. The default in the pi
 
 A **row group** is the logical horizontal stripe. The pinned writer defaults to one row group per file and can be told to start another after a row threshold.
 
-Encodings in the pinned schema are `CASCADE` (0), implemented with Vortex, and `CUSTOM_WASM` (255), which must be decoded by a Wasm binary stored in the file. A reader is not required to execute that binary. This Elixir library does not.
+Encodings in the pinned schema are `CASCADE` (0), implemented with Vortex, and `CUSTOM_WASM` (255), which must be decoded by a Wasm binary stored in the file. A reader is not required to execute that binary. This library executes it only when a read passes `wasm: :sandbox`.
 
 ```mermaid
 flowchart TB
@@ -43,7 +43,7 @@ The footer points at column metadata. It is not a copy of every IOUnit header. T
 
 ## What the Elixir library is for
 
-The library is a separate project. It uses the module `F3` and, if it is ever published, the Hex name `f3`. On 2026-11-03 that Hex name was unused. The library pins one upstream commit and wire version 0.1. Opening a file acquires a byte source. Schema and footer metadata are decoded from the tail. Asking for rows returns `{:error, %F3.Error{category: :not_implemented}}`.
+The library is a separate project. It uses the module `F3` and, if it is ever published, the Hex name `f3`. On 2026-11-03 that Hex name was unused. Hex has not been published. The library pins one upstream commit and wire version 0.1. Opening a file acquires a byte source. Schema and footer metadata are decoded from the tail. Asking for rows returns columnar batches when the native decoder is compiled, and `:native_unavailable` when it is not.
 
 From the repository root:
 
@@ -51,7 +51,7 @@ From the repository root:
 mix run examples/tutorial_01.exs
 ```
 
-The script prints the pinned wire version. Writing is not implemented. Reading rows is implemented when the native decoder is compiled.
+The script prints the pinned wire version. Reading and writing are implemented when the native build is compiled. Wasm stays off unless a read passes `wasm: :sandbox`.
 
 ## Glossary
 
@@ -67,7 +67,7 @@ The script prints the pinned wire version. Writing is not implemented. Reading r
 
 ## What is experimental?
 
-Upstream F3 at `bd92506447dc1333820cfe9a34ebbf497fe0219e` is a research prototype. The schema file says the definition can change. The Elixir code decodes the footer. When `F3_BUILD_NATIVE=1` it also decodes the CASCADE payloads in the committed fixtures. It does not run Wasm. Wire versions other than 0.1 are rejected. There are no Elixir performance numbers in this article.
+Upstream F3 at `bd92506447dc1333820cfe9a34ebbf497fe0219e` is a research prototype. The schema file says the definition can change. The Elixir code decodes the footer. When `F3_BUILD_NATIVE=1` it also decodes the CASCADE payloads in the committed fixtures and can run Wasm only for `wasm: :sandbox`. Wire versions other than 0.1 are rejected. There are no Elixir performance numbers in this article.
 
 ## Next
 

@@ -15,6 +15,13 @@ defmodule F3.Writer do
   @enforce_keys [:port, :schema, :path, :temp, :closed]
   defstruct [:port, :schema, :path, :temp, :closed]
 
+  @typedoc """
+  One local writer.
+
+  `port` is the helper port, or `nil` before it starts. `schema` is the
+  accepted logical schema. `path` is the destination. `temp` is the file
+  renamed onto `path` at `close/1`. `closed` is true after a successful close.
+  """
   @type t :: %__MODULE__{
           port: port() | nil,
           schema: F3.Schema.t(),
@@ -50,8 +57,28 @@ defmodule F3.Writer do
   non-null. `{:float64, null: true}` is nullable. `compression:` is
   `:uncompressed` (the default), `:zstd`, or `:lz4`. `row_group_rows:` starts
   a new row group after at least that many rows. `iounit_bytes:` defaults to
-  8 MiB and is rejected above 64 MiB. `checksum: true` stores a per-IOUnit
+  8 MiB and is rejected above 64 MiB.   `checksum: true` stores a per-IOUnit
   xxHash.
+
+  A missing schema, an unknown option, and an IOUnit above 64 MiB return
+  an error and create no file. Without the native helper, a valid schema
+  returns `:not_implemented` and also creates no file. These checks do not
+  raise.
+
+  ## Examples
+
+      iex> {:error, error} = F3.Writer.open("unused.f3", [])
+      iex> error.message
+      "schema is required"
+
+      iex> {:error, error} = F3.Writer.open("unused.f3", schema: [id: :int64], source: :remote)
+      iex> error.message
+      "unknown option source"
+
+      iex> opts = [schema: [price: {:float64, null: true}], iounit_bytes: 64 * 1024 * 1024 + 1]
+      iex> {:error, error} = F3.Writer.open("unused.f3", opts)
+      iex> error.category
+      :resource_limit
   """
   @spec open(Path.t(), keyword()) :: {:ok, t()} | {:error, F3.Error.t()}
   def open(path, opts \\ [])
@@ -72,7 +99,14 @@ defmodule F3.Writer do
   Row maps may use atom or string keys. A missing key is null only when the
   field is nullable. An integer outside the field width is `:invalid_type`.
   A binary that is not UTF-8 is `:invalid_argument`. An empty batch is
-  accepted and does not call the helper.
+  accepted and does not call the helper. A value that is not a writer is
+  `:not_implemented`. This does not raise.
+
+  ## Examples
+
+      iex> {:error, error} = F3.Writer.write(:nope, [])
+      iex> error.category
+      :not_implemented
   """
   @spec write(t(), F3.Batch.t() | [map()]) :: :ok | {:error, F3.Error.t()}
   def write(%__MODULE__{closed: true}, _batch) do
@@ -115,7 +149,14 @@ defmodule F3.Writer do
   @doc """
   Finishes the file and renames it onto the destination.
 
-  A second call returns the same closed handle.
+  A second call returns the same closed handle. A value that is not a
+  writer is `:not_implemented`.
+
+  ## Examples
+
+      iex> {:error, error} = F3.Writer.close(:nope)
+      iex> error.reason
+      :writer_close
   """
   @spec close(t()) :: {:ok, t()} | {:error, F3.Error.t()}
   def close(%__MODULE__{closed: true} = writer), do: {:ok, writer}

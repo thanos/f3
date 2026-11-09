@@ -15,6 +15,13 @@ defmodule F3.FlatBuffer do
   @enforce_keys [:bin, :pos, :vtable, :vtable_size, :object_size, :depth, :visits]
   defstruct [:bin, :pos, :vtable, :vtable_size, :object_size, :depth, :visits]
 
+  @typedoc """
+  One open table.
+
+  `bin` is the whole buffer. `pos` is the table's start. `vtable` is the
+  vtable start. `vtable_size` and `object_size` come from that vtable.
+  `depth` counts nested tables. `visits` counts tables opened from this root.
+  """
   @type t :: %__MODULE__{
           bin: binary(),
           pos: non_neg_integer(),
@@ -25,11 +32,23 @@ defmodule F3.FlatBuffer do
           visits: non_neg_integer()
         }
 
+  @typedoc "`:corrupt` is a bad offset. `:depth` is the visit or nesting cap."
   @type error :: :corrupt | :depth
 
   @doc """
   Opens the root table. The first four bytes are a little-endian offset
-  from the start of `bin`.
+  from the start of `bin`. An empty or non-binary buffer is `:corrupt`.
+  This does not raise for those inputs.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> table.pos
+      10
+
+      iex> F3.FlatBuffer.root(<<>>)
+      {:error, :corrupt}
   """
   @spec root(binary()) :: {:ok, t()} | {:error, error()}
   def root(bin) when is_binary(bin) do
@@ -46,6 +65,18 @@ defmodule F3.FlatBuffer do
 
   @doc """
   Signed or unsigned little-endian scalar. An absent slot returns `default`.
+
+  `index` is the vtable field, starting at 0. `kind` is `:u8`, `:u16`,
+  `:u32`, `:u64`, `:i16`, `:i32`, or `:bool`. A bad offset is `:corrupt`.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.scalar(table, 0, :u8, 0)
+      {:ok, 7}
+      iex> F3.FlatBuffer.scalar(table, 1, :u8, 0)
+      {:ok, 0}
   """
   @spec scalar(t(), non_neg_integer(), :u8 | :u16 | :u32 | :u64 | :i16 | :i32 | :bool, term()) ::
           {:ok, term()} | {:error, error()}
@@ -58,6 +89,13 @@ defmodule F3.FlatBuffer do
 
   @doc """
   Same as `scalar/4`, but an absent slot is `nil` instead of a default.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.optional_scalar(table, 1, :u8)
+      {:ok, nil}
   """
   @spec optional_scalar(t(), non_neg_integer(), :u8 | :u16 | :u32 | :u64 | :i16 | :i32 | :bool) ::
           {:ok, term() | nil} | {:error, error()}
@@ -78,6 +116,13 @@ defmodule F3.FlatBuffer do
 
   @doc """
   UTF-8 string. Absent is `nil`. Bytes that are not UTF-8 are `:corrupt`.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.string(table, 1)
+      {:ok, nil}
   """
   @spec string(t(), non_neg_integer()) :: {:ok, String.t() | nil} | {:error, error()}
   def string(%__MODULE__{} = table, index) do
@@ -95,6 +140,13 @@ defmodule F3.FlatBuffer do
 
   @doc """
   Raw byte vector, including an Arrow IPC message. Absent is `nil`.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.bytes(table, 1)
+      {:ok, nil}
   """
   @spec bytes(t(), non_neg_integer()) :: {:ok, binary() | nil} | {:error, error()}
   def bytes(%__MODULE__{} = table, index) do
@@ -114,7 +166,14 @@ defmodule F3.FlatBuffer do
 
   @doc """
   Vector of unsigned little-endian integers. Absent is an empty list.
-  `width` is 4 or 8.
+  `width` is 4 or 8. Any other width raises `FunctionClauseError`.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.uints(table, 1, 4)
+      {:ok, []}
   """
   @spec uints(t(), non_neg_integer(), 4 | 8) :: {:ok, [non_neg_integer()]} | {:error, error()}
   def uints(%__MODULE__{} = table, index, width) when width in [4, 8] do
@@ -132,6 +191,13 @@ defmodule F3.FlatBuffer do
 
   @doc """
   Vector of tables. Absent is an empty list.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.tables(table, 1)
+      {:ok, []}
   """
   @spec tables(t(), non_neg_integer()) :: {:ok, [t()]} | {:error, error()}
   def tables(%__MODULE__{} = table, index) do
@@ -153,6 +219,13 @@ defmodule F3.FlatBuffer do
 
   @doc """
   Vector of UTF-8 strings. Absent is an empty list.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.string_vector(table, 1)
+      {:ok, []}
   """
   @spec string_vector(t(), non_neg_integer()) :: {:ok, [String.t()]} | {:error, error()}
   def string_vector(%__MODULE__{} = table, index) do
@@ -177,7 +250,15 @@ defmodule F3.FlatBuffer do
   end
 
   @doc """
-  Follows a table slot. Absent is `nil`.
+  Follows a table slot. Absent is `nil`. A slot that does not point at a
+  table is `:corrupt`.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 7, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.table(table, 1)
+      {:ok, nil}
   """
   @spec table(t(), non_neg_integer()) :: {:ok, t() | nil} | {:error, error()}
   def table(%__MODULE__{} = table, index) do
@@ -197,7 +278,14 @@ defmodule F3.FlatBuffer do
   Union stored as a type byte at `type_index` and a table at the next slot.
 
   Type `0` is none. Any other type follows the table. The caller interprets
-  the type byte.
+  the type byte. A non-zero type with no table is `:corrupt`.
+
+  ## Examples
+
+      iex> bin = <<10::little-32, 6::little-16, 8::little-16, 4::little-16, 6::little-32, 0, 0, 0, 0>>
+      iex> {:ok, table} = F3.FlatBuffer.root(bin)
+      iex> F3.FlatBuffer.union(table, 0)
+      {:ok, :none}
   """
   @spec union(t(), non_neg_integer()) ::
           {:ok, :none | {non_neg_integer(), t()}} | {:error, error()}

@@ -21,18 +21,38 @@ defmodule F3.Schema do
           | {:struct, [field()]}
           | {:unsupported, non_neg_integer()}
 
+  @typedoc """
+  One logical field.
+
+  `name` is the footer name. `type` is the nested Arrow term. `nullable`
+  is true when the field accepts nulls. A writer keyword `:int64` becomes
+  `nullable: false`. `{:int64, null: true}` becomes `nullable: true`.
+  """
   @type field :: %{
           required(:name) => String.t(),
           required(:type) => arrow_type(),
           required(:nullable) => boolean()
         }
 
+  @typedoc "`fields` is the top-level schema, in footer order."
   @type t :: %__MODULE__{fields: [field()]}
 
   defstruct fields: []
 
   @doc """
   Short type name used by `F3.inspect/2`.
+
+  `{:int, width, true}` is `int{width}`. `{:int, width, false}` is
+  `uint{width}`. Float precisions are `float16`, `float32`, and `float64`.
+  Lists and structs include their children. This does not raise.
+
+  ## Examples
+
+      iex> F3.Schema.type_label({:int, 64, true})
+      "int64"
+
+      iex> F3.Schema.type_label({:list, %{name: "item", type: :utf8, nullable: true}})
+      "list<utf8>"
   """
   @spec type_label(arrow_type()) :: String.t()
   def type_label(:null), do: "null"
@@ -56,7 +76,13 @@ defmodule F3.Schema do
   def type_label({:unsupported, id}), do: "unsupported(#{id})"
 
   @doc """
-  JSON-ready form of one field. Keys are strings.
+  JSON-ready form of one field. Keys are strings. A nested type is a map.
+  A primitive type is the same string as `type_label/1`.
+
+  ## Examples
+
+      iex> F3.Schema.field_map(%{name: "id", type: {:int, 64, true}, nullable: false})
+      %{"name" => "id", "nullable" => false, "type" => "int64"}
   """
   @spec field_map(field()) :: map()
   def field_map(field) do

@@ -20,3 +20,20 @@ warning.
 The paper is published under a Creative Commons Attribution 4.0 International
 License by its authors. This repository cites it. It does not redistribute
 the paper.
+
+Direct native crates, from the manifests read for this tree:
+
+- Vortex revision `c0d89a66cbaa542bd9aa277cfdf52f2728c4b37a`. The workspace
+  manifest sets `license = "Apache-2.0"`. `vortex-array`, `vortex-dtype`,
+  `vortex-error`, `vortex-ipc`, and `vortex-sampling-compressor` inherit that
+  field. The checkout `LICENSE` is the Apache License 2.0.
+- `arrow-array` 53.3.0 and `arrow-buffer` 53.3.0, the NIF pins, each set
+  `license = "Apache-2.0"`. `arrow-array` 53.0.0, the version named by the
+  pinned `fff-poc` workspace, also sets `license = "Apache-2.0"`.
+- `wasmtime` 28.0.0 sets `license = "Apache-2.0 WITH LLVM-exception"`.
+- `fff-poc` at the pinned checkout does not set `license` in its own
+  `Cargo.toml`. The workspace package field is `license = "MIT"`, and the
+  checkout root `LICENSE` is the MIT License.
+
+Those crates are fetched at build time. This package does not vendor them.
+Precompiled NIFs are not published.

@@ -6,9 +6,67 @@ defmodule F3.Writer.Build do
 
   @sha "bd92506447dc1333820cfe9a34ebbf497fe0219e"
   @toolchain "nightly-2025-02-24"
+  @release_host "https://github.com/thanos/f3/releases/download"
 
   @spec install!() :: :ok
   def install! do
+    if System.get_env("F3_BUILD_NATIVE") == "1" do
+      compile_source!()
+    else
+      fetch_precompiled!()
+    end
+  end
+
+  @doc false
+  @spec classify(String.t()) :: {:ok, String.t()} | :error
+  def classify(arch) when is_binary(arch) do
+    case String.split(arch, "-") do
+      [cpu, "apple", "darwin" <> _] -> {:ok, "#{cpu}-apple-darwin"}
+      [cpu, _vendor, "linux", abi] -> linux_triple(cpu, abi)
+      _other -> :error
+    end
+  end
+
+  @doc false
+  @spec archive_for(map(), String.t()) :: {:ok, String.t(), String.t()} | :error
+  def archive_for(checksums, target) when is_map(checksums) and is_binary(target) do
+    suffix = "-#{target}.tar.gz"
+
+    case Enum.find(checksums, fn {name, _hash} -> String.ends_with?(name, suffix) end) do
+      {name, "sha256:" <> hash} when hash != "" -> {:ok, name, hash}
+      _other -> :error
+    end
+  end
+
+  @doc false
+  @spec release_version(String.t(), String.t()) :: String.t()
+  def release_version(name, target) do
+    name
+    |> String.trim_trailing("-#{target}.tar.gz")
+    |> String.trim_leading("f3_write-v")
+  end
+
+  @doc false
+  @spec unpack_writer!(Path.t(), Path.t()) :: :ok
+  def unpack_writer!(archive, dest) do
+    dir = Path.join(System.tmp_dir!(), "f3_write-#{System.unique_integer([:positive])}")
+    File.mkdir_p!(dir)
+
+    case :erl_tar.extract(to_charlist(archive), [:compressed, {:cwd, to_charlist(dir)}]) do
+      :ok ->
+        File.mkdir_p!(Path.dirname(dest))
+        File.cp!(Path.join(dir, "f3_write"), dest)
+        File.chmod!(dest, 0o755)
+        File.rm_rf!(dir)
+        :ok
+
+      {:error, reason} ->
+        File.rm_rf!(dir)
+        raise "could not unpack #{Path.basename(archive)}: #{inspect(reason)}"
+    end
+  end
+
+  defp compile_source! do
     root = File.cwd!()
     source = Path.join(root, "native/f3_write/src/main.rs")
     output = Path.join(root, "priv/native/f3_write")
@@ -47,6 +105,91 @@ defmodule F3.Writer.Build do
       :ok
     end
   end
+
+  defp fetch_precompiled! do
+    checksums = read_checksums!()
+    target = target_triple()
+
+    case archive_for(checksums, target) do
+      {:ok, name, hash} -> install_archive(name, hash, target)
+      :error -> missing_archive!(target)
+    end
+  end
+
+  defp install_archive(name, hash, target) do
+    dest = Path.join(File.cwd!(), "priv/native/f3_write")
+
+    if fresh_binary?(dest, hash) do
+      :ok
+    else
+      download_archive!(name, hash, target, dest)
+    end
+  end
+
+  defp download_archive!(name, hash, target, dest) do
+    version = release_version(name, target)
+    url = "#{@release_host}/v#{version}/#{name}"
+    archive = Path.join(System.tmp_dir!(), name)
+    curl = System.find_executable("curl") || raise "downloading f3_write requires curl"
+
+    {log, status} = System.cmd(curl, ["-fsSL", "-o", archive, url], stderr_to_stdout: true)
+
+    if status != 0 do
+      File.rm(archive)
+      raise "could not download #{name}\n#{log}"
+    end
+
+    actual = sha256(archive)
+
+    if actual == hash do
+      unpack_writer!(archive, dest)
+      File.write!(dest <> ".sha256", hash)
+      File.rm(archive)
+      :ok
+    else
+      File.rm(archive)
+      raise "checksum mismatch for #{name}"
+    end
+  end
+
+  defp read_checksums! do
+    path = Path.expand("../../checksum-f3_write.exs", __DIR__)
+    {checksums, _binding} = Code.eval_file(path)
+
+    if is_map(checksums) do
+      checksums
+    else
+      raise "checksum-f3_write.exs must evaluate to a map"
+    end
+  end
+
+  defp target_triple do
+    arch = :erlang.system_info(:system_architecture) |> List.to_string()
+
+    case classify(arch) do
+      {:ok, triple} -> triple
+      :error -> missing_archive!(arch)
+    end
+  end
+
+  defp missing_archive!(target) do
+    raise "no precompiled f3_write for #{target}. Set F3_BUILD_NATIVE=1 to compile it."
+  end
+
+  defp fresh_binary?(dest, hash) do
+    stamp = dest <> ".sha256"
+    File.regular?(dest) and File.regular?(stamp) and String.trim(File.read!(stamp)) == hash
+  end
+
+  defp sha256(path) do
+    path
+    |> File.read!()
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16(case: :lower)
+  end
+
+  defp linux_triple(cpu, "gnu" <> _), do: {:ok, "#{cpu}-unknown-linux-gnu"}
+  defp linux_triple(_cpu, _abi), do: :error
 
   defp fresh?(output, source) do
     File.regular?(output) and File.stat!(output).mtime >= File.stat!(source).mtime

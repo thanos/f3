@@ -5,9 +5,12 @@
 /doc/
 erl_crash.dump
 *.ez
-
+.DS_Store
 # Local upstream checkout and tool output
 /tmp/
+
+# Generated when a release is packaged. A git checkout stays rust-free.
+/checksum-*.exs
 
 # Native crate build
 /native/f3_native/target/

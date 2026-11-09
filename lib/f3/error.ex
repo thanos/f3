@@ -10,6 +10,23 @@ defmodule F3.Error do
   @enforce_keys [:reason, :category, :message]
   defstruct [:reason, :category, :message, :cause, context: %{}]
 
+  @typedoc """
+  Stable class of a failure.
+
+  `:not_implemented` is a feature this build does not perform.
+  `:not_found` is a missing path or HTTP object. `:io` is a source failure.
+  `:closed` is a handle that was already released. `:invalid_argument` is a
+  caller value this function does not accept. `:invalid_magic` is a file that
+  does not end in `F3`. `:unsupported_version` is a wire pair other than 0.1.
+  `:truncated` is a short file or a short HTTP body. `:corrupt_metadata` is a
+  footer that does not describe the file. `:unsupported_encoding` is an
+  encoding this build will not decode. `:invalid_projection` is an unknown
+  column name. `:checksum` is a stored chunk checksum that did not match.
+  `:resource_limit` is a size above the caller's cap, including a timeout.
+  `:invalid_type` is a value that does not fit the field. `:native_unavailable`
+  means the NIF was not compiled. `:corrupt` is an encoding unit that could
+  not be decoded.
+  """
   @type category ::
           :not_implemented
           | :not_found
@@ -28,6 +45,15 @@ defmodule F3.Error do
           | :native_unavailable
           | :corrupt
 
+  @typedoc """
+  One failure.
+
+  `reason` is the operation or the underlying atom, such as `:enoent`.
+  `category` is the stable class. `message` is safe to show. `cause` is
+  reserved and is `nil` for errors this library builds. `context` holds
+  small identifiers. Constructors set `context.operation`. File bytes and
+  secrets are not fields.
+  """
   @type t :: %__MODULE__{
           reason: atom(),
           category: category(),
@@ -38,6 +64,12 @@ defmodule F3.Error do
 
   @doc """
   Builds an error for an operation this experimental version does not perform.
+
+  ## Examples
+
+      iex> error = F3.Error.not_implemented(:read)
+      iex> {error.category, error.message}
+      {:not_implemented, "read is not implemented in this experimental build"}
   """
   @spec not_implemented(atom()) :: t()
   def not_implemented(operation) when is_atom(operation) do
@@ -51,6 +83,12 @@ defmodule F3.Error do
 
   @doc """
   The handle has been closed.
+
+  ## Examples
+
+      iex> error = F3.Error.closed(:read)
+      iex> {error.category, error.context.operation}
+      {:closed, :read}
   """
   @spec closed(atom()) :: t()
   def closed(operation) when is_atom(operation) do
@@ -64,6 +102,15 @@ defmodule F3.Error do
 
   @doc """
   The caller passed a value the function does not accept.
+
+  `operation` is the public call. `message` is the sentence returned to the
+  caller. This does not raise.
+
+  ## Examples
+
+      iex> error = F3.Error.invalid_argument(:open, "options must be a keyword list")
+      iex> error.category
+      :invalid_argument
   """
   @spec invalid_argument(atom(), String.t()) :: t()
   def invalid_argument(operation, message)
@@ -77,7 +124,13 @@ defmodule F3.Error do
   end
 
   @doc """
-  A local path does not exist.
+  A local path does not exist. `reason` is `:enoent`.
+
+  ## Examples
+
+      iex> error = F3.Error.not_found("missing-file.f3")
+      iex> error.message
+      "file not found: missing-file.f3"
   """
   @spec not_found(Path.t()) :: t()
   def not_found(path) when is_binary(path) do
@@ -91,6 +144,18 @@ defmodule F3.Error do
 
   @doc """
   A source operation failed. `reason` is an Erlang file error atom.
+  `context` is merged with `%{operation: operation}`. The default context
+  is an empty map.
+
+  ## Examples
+
+      iex> error = F3.Error.io(:pread, :eacces)
+      iex> error.message
+      "pread failed: eacces"
+
+      iex> error = F3.Error.io(:pread, :redirect, %{status: 301})
+      iex> error.context.status
+      301
   """
   @spec io(atom(), atom(), map()) :: t()
   def io(operation, reason, context \\ %{})
@@ -104,7 +169,13 @@ defmodule F3.Error do
   end
 
   @doc """
-  The file ends before a required field.
+  The file ends before a required field. `context` defaults to an empty map.
+
+  ## Examples
+
+      iex> error = F3.Error.truncated(:open, "file is shorter than the 32 byte postscript")
+      iex> error.category
+      :truncated
   """
   @spec truncated(atom(), String.t(), map()) :: t()
   def truncated(operation, message, context \\ %{})
@@ -114,6 +185,11 @@ defmodule F3.Error do
 
   @doc """
   The last two bytes are not the F3 magic.
+
+  ## Examples
+
+      iex> F3.Error.invalid_magic(:open).message
+      "file does not end with the F3 magic"
   """
   @spec invalid_magic(atom()) :: t()
   def invalid_magic(operation) when is_atom(operation) do
@@ -128,6 +204,12 @@ defmodule F3.Error do
 
   @doc """
   The postscript version is outside the pinned pair.
+
+  ## Examples
+
+      iex> error = F3.Error.unsupported_version(:open, 1, 0)
+      iex> error.message
+      "unsupported F3 version 1.0"
   """
   @spec unsupported_version(atom(), non_neg_integer(), non_neg_integer()) :: t()
   def unsupported_version(operation, major, minor)
@@ -143,6 +225,11 @@ defmodule F3.Error do
 
   @doc """
   A size, offset, or FlatBuffers field does not describe this file.
+
+  ## Examples
+
+      iex> F3.Error.corrupt_metadata(:open, "footer is truncated").category
+      :corrupt_metadata
   """
   @spec corrupt_metadata(atom(), String.t(), map()) :: t()
   def corrupt_metadata(operation, message, context \\ %{})
@@ -152,6 +239,11 @@ defmodule F3.Error do
 
   @doc """
   The file names an encoding this build will not decode.
+
+  ## Examples
+
+      iex> F3.Error.unsupported_encoding(:read, "CUSTOM_WASM is not executed").category
+      :unsupported_encoding
   """
   @spec unsupported_encoding(atom(), String.t(), map()) :: t()
   def unsupported_encoding(operation, message, context \\ %{})
@@ -161,6 +253,12 @@ defmodule F3.Error do
 
   @doc """
   A projected name is not a top-level field.
+
+  ## Examples
+
+      iex> error = F3.Error.invalid_projection(:read, "missing")
+      iex> error.message
+      "unknown column missing"
   """
   @spec invalid_projection(atom(), String.t()) :: t()
   def invalid_projection(operation, name)
@@ -172,6 +270,11 @@ defmodule F3.Error do
 
   @doc """
   A chunk checksum was present and did not match the bytes.
+
+  ## Examples
+
+      iex> F3.Error.checksum(:read, "chunk checksum mismatch").category
+      :checksum
   """
   @spec checksum(atom(), String.t()) :: t()
   def checksum(operation, message)
@@ -181,6 +284,11 @@ defmodule F3.Error do
 
   @doc """
   Row decoding needs the native library and this build does not have it.
+
+  ## Examples
+
+      iex> F3.Error.native_unavailable(:read).message
+      "native decoder is not loaded"
   """
   @spec native_unavailable(atom()) :: t()
   def native_unavailable(operation) when is_atom(operation) do
@@ -195,6 +303,11 @@ defmodule F3.Error do
 
   @doc """
   An encoding unit could not be decoded. The message does not include file bytes.
+
+  ## Examples
+
+      iex> F3.Error.corrupt(:decode, "native column term is the wrong shape").category
+      :corrupt
   """
   @spec corrupt(atom(), String.t()) :: t()
   def corrupt(operation, message)
@@ -204,6 +317,11 @@ defmodule F3.Error do
 
   @doc """
   A value does not fit the field type.
+
+  ## Examples
+
+      iex> F3.Error.invalid_type(:writer_write, "id is not an integer").category
+      :invalid_type
   """
   @spec invalid_type(atom(), String.t()) :: t()
   def invalid_type(operation, message)
@@ -212,7 +330,14 @@ defmodule F3.Error do
   end
 
   @doc """
-  A size field is above the caller's allocation cap.
+  A size field is above the caller's allocation cap. A timed-out request
+  uses this category as well.
+
+  ## Examples
+
+      iex> error = F3.Error.resource_limit(:open, "request timed out", %{timeout_ms: 10})
+      iex> error.context.timeout_ms
+      10
   """
   @spec resource_limit(atom(), String.t(), map()) :: t()
   def resource_limit(operation, message, context \\ %{})

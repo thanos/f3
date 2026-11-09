@@ -2,22 +2,43 @@ defmodule F3.Native do
   @moduledoc """
   Optional native decoder.
 
-  The NIF is compiled only when `F3_BUILD_NATIVE=1` is set in the environment
-  at compile time and the `rustler` dependency is available. `info/0` reports
-  the crate name and version. `decode_encunit/3` decodes one CASCADE encoding
-  unit on the dirty CPU scheduler. It does not open files, decode FlatBuffers,
-  or run WebAssembly. The crate does not link `fff-poc` and does not install
-  a global allocator. Wasmtime 28 is in the same crate. It runs only when
-  `decode_wasm/5` is called, which `F3.read/2` does only for `wasm: :sandbox`.
+  A Hex package that includes `checksum-Elixir.F3.Native.exs` downloads a
+  precompiled NIF for macOS Apple silicon (`aarch64-apple-darwin`) or Linux
+  x86_64 (`x86_64-unknown-linux-gnu`). OTP 28 uses NIF version 2.17. This
+  repository has no checksum file, so `available?/0` is false unless
+  `F3_BUILD_NATIVE=1` at compile time and the `rustler` dependency is
+  available. `info/0` reports the crate name and version. `decode_encunit/3`
+  decodes one CASCADE encoding unit on the dirty CPU scheduler. It does not
+  open files, decode FlatBuffers, or run WebAssembly. The crate does not
+  link `fff-poc` and does not install a global allocator. Wasmtime 28 is in
+  the same crate. It runs only when `decode_wasm/5` is called, which
+  `F3.read/2` does only for `wasm: :sandbox`.
 
-  `available?/0` is false in the default build, which does not invoke `cargo`.
-  Mix recompiles this module when `F3_BUILD_NATIVE` changes. `mix test` and
-  `mix compile` both pick up the current value.
+  Mix recompiles this module when `F3_BUILD_NATIVE` changes and when the
+  checksum file appears. Other targets compile from source with
+  `F3_BUILD_NATIVE=1`.
   """
 
   @external_resource Path.expand("../../native/f3_native/.f3_build_native", __DIR__)
   @external_resource Path.expand("../../native/f3_write/src/main.rs", __DIR__)
+  @checksum_file Path.expand("../../checksum-Elixir.F3.Native.exs", __DIR__)
+  @external_resource @checksum_file
   @build_native System.get_env("F3_BUILD_NATIVE") == "1"
+  @precompiled File.regular?(@checksum_file)
+  @load_native @build_native or @precompiled
+
+  if @precompiled and not @build_native do
+    @nif_version Mix.Project.config()[:version]
+
+    use RustlerPrecompiled,
+      otp_app: :f3,
+      crate: "f3_native",
+      base_url: "https://github.com/thanos/f3/releases/download/v#{@nif_version}",
+      force_build: false,
+      version: @nif_version,
+      nif_versions: ["2.17"],
+      targets: ["aarch64-apple-darwin", "x86_64-unknown-linux-gnu"]
+  end
 
   if @build_native do
     unless Code.ensure_loaded?(Rustler) do
@@ -54,21 +75,30 @@ defmodule F3.Native do
       ]
   end
 
-  if @build_native do
+  if @load_native do
     @doc """
     Whether this VM loaded the native scaffold.
+
+    This returns `true` when `info/0` returns the crate name and version.
     """
     @spec available?() :: boolean()
     def available?, do: match?({:ok, {_crate, _version}}, info())
   else
     @doc """
     Whether this VM loaded the native scaffold.
+
+    The default build does not compile the NIF, so this is `false`.
+
+    ## Examples
+
+        iex> F3.Native.available?()
+        false
     """
     @spec available?() :: boolean()
     def available?, do: false
   end
 
-  if @build_native do
+  if @load_native do
     @doc """
     Returns `{:ok, {crate_name, version}}` when the NIF is loaded.
     """
@@ -191,6 +221,14 @@ defmodule F3.Native do
   else
     @doc """
     Returns `{:ok, {crate_name, version}}` when the NIF is loaded.
+
+    This build has no NIF, so the result is `:native_unavailable`. It does
+    not raise.
+
+    ## Examples
+
+        iex> F3.Native.info()
+        {:error, :native_unavailable}
     """
     @spec info() :: {:ok, {String.t(), String.t()}} | {:error, :native_unavailable}
     def info, do: {:error, :native_unavailable}
@@ -225,9 +263,18 @@ defmodule F3.Native do
     def wasm_sample(_name), do: {:error, :native_unavailable}
   end
 
-  if not @build_native do
+  if not @load_native do
     @doc """
     Decodes one encoding unit when the NIF was compiled.
+
+    `bytes` is the unit. `compression` is `:uncompressed`, `:zstd`, or
+    `:lz4`. `type` is the physical kind, such as `:i64`. This build returns
+    `{:error, :native_unavailable}` and does not raise.
+
+    ## Examples
+
+        iex> F3.Native.decode_encunit(<<>>, :uncompressed, :i64)
+        {:error, :native_unavailable}
     """
     @spec decode_encunit(binary(), atom(), atom()) :: {:error, :native_unavailable}
     def decode_encunit(_bytes, _compression, _type), do: {:error, :native_unavailable}

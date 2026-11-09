@@ -15,7 +15,7 @@ defmodule F3.NativeTest do
   )
 
   test "the NIF is loaded and does not require fff-poc" do
-    assert {:ok, {"f3_native", "0.0.1"}} = F3.Native.info()
+    assert {:ok, {"f3_native", "0.1.0"}} = F3.Native.info()
     assert F3.Native.available?()
   end
 

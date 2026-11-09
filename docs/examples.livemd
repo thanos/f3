@@ -1,0 +1,160 @@
+# F3 examples
+
+Library version `0.1.0`. Wire version 0.1. Work through these cells from the repository root. They follow the user guide: open a file, inspect it, project a column, write, refuse a bad HTTP URL, and register a decoder.
+
+`small.f3` has three rows and one row group. The fields are `trade_id` (`int64`), `symbol` (`utf8`), and `price` (`float64`). None of them are nullable.
+
+Row decoding needs the native decoder. On the default build, `F3.read/2` and `F3.stream/2` return `:native_unavailable` and do not read the payload. The cells below check that result, so they pass without Rust.
+
+## Inspect a file
+
+```elixir
+{:ok, file} = F3.open("test/fixtures/small.f3")
+{:ok, schema} = F3.schema(file, max_metadata_bytes: 1_048_576)
+["trade_id", "symbol", "price"] = Enum.map(schema.fields, & &1.name)
+{:ok, text} = F3.inspect(file, detail: false, format: :text)
+true = text =~ "schema: trade_id int64, symbol utf8, price float64"
+{:ok, meta} = F3.metadata(file)
+{0, 1, 1} = {meta.major_version, meta.minor_version, length(meta.row_groups)}
+{:ok, closed} = F3.close(file)
+true = closed.closed
+```
+
+## Project one column
+
+`columns:` selects top-level fields. `batch_size:` slices a decoded unit. Without the native decoder the call returns before any payload read. A missing file is `:not_found`.
+
+```elixir
+{:ok, file} = F3.open("test/fixtures/small.f3")
+{:error, read_error} = F3.read(file, columns: ["symbol"], batch_size: 2, wasm: :off)
+:native_unavailable = read_error.category
+{:error, stream_error} = F3.stream(file, row_groups: [0])
+"native decoder is not loaded" = stream_error.message
+{:error, missing} = F3.open("missing-file.f3")
+:not_found = missing.category
+:ok = F3.close(file) |> elem(0)
+```
+
+## A batch you already hold
+
+When a read succeeds, you keep `batch.columns` or call `F3.Batch.to_rows/1`. This cell builds the column in Elixir so it runs on every build.
+
+```elixir
+{:ok, ids} = F3.Column.from_native(:i64, 2, <<1::little-64, 2::little-64>>, nil)
+2 = F3.Column.value(ids, 1)
+true = F3.Column.matches?(ids, :integer)
+sliced = F3.Column.slice(ids, 1, 1)
+2 = F3.Column.value(sliced, 0)
+field = %{name: "id", type: {:int, 64, true}, nullable: false}
+batch = %F3.Batch{
+  columns: %{"id" => ids},
+  num_rows: 2,
+  schema: %F3.Schema{fields: [field]}
+}
+{:ok, [%{"id" => 1}, %{"id" => 2}]} = F3.Batch.to_rows(batch)
+"int64" = F3.Schema.type_label(field.type)
+```
+
+## Write options that fail before a file exists
+
+A missing schema, an unknown option, and an IOUnit above 64 MiB create nothing. Those checks are the same whether or not the native writer is compiled. A valid schema on the default build returns `:not_implemented` and also creates nothing.
+
+```elixir
+{:error, missing_schema} = F3.Writer.open("unused.f3", [])
+"schema is required" = missing_schema.message
+
+{:error, unknown} =
+  F3.Writer.open("unused.f3", schema: [id: :int64], source: :remote)
+
+"unknown option source" = unknown.message
+
+{:error, limited} =
+  F3.Writer.open("unused.f3",
+    schema: [price: {:float64, null: true}],
+    iounit_bytes: 64 * 1024 * 1024 + 1
+  )
+
+:resource_limit = limited.category
+{:error, closed} = F3.Writer.close(:nope)
+:not_implemented = closed.category
+```
+
+## A memory source
+
+`source: {:memory, binary}` does not open `path`. `pread/3` returns at most `length` bytes. A start at or past the end is an empty binary.
+
+```elixir
+{:ok, file} = F3.open("unused", source: {:memory, <<1, 2, 3, 4>>})
+{:ok, state} = F3.IO.Memory.open(<<1, 2, 3, 4>>)
+{:ok, 4} = F3.IO.Memory.size(state)
+{:ok, <<2, 3>>} = F3.IO.Memory.pread(state, 1, 2)
+{:ok, <<>>} = F3.IO.Memory.pread(state, 4, 2)
+{:ok, closed} = F3.IO.Memory.close(state)
+{:error, error} = F3.IO.Memory.size(closed)
+:closed = error.category
+:memory = file.origin
+```
+
+## An HTTP URL that is refused
+
+Redirects are refused. A URL that is not `http` or `https` fails before a request. A partial signing key set fails the same way. The secret is not stored on the error.
+
+```elixir
+{:error, url_error} = F3.open("unused", source: {:http, "ftp://example.test/trades.f3"})
+"http url must be http or https" = url_error.message
+
+{:error, keys} =
+  F3.IO.HTTP.open("http://example.test/trades.f3", bucket: "trades", timeout_ms: 1_000)
+
+"signed request needs endpoint, bucket, key, region, access_key, and secret_key" =
+  keys.message
+```
+
+## A decoder you register
+
+The file does not name an Elixir module. You register one and pass that pid as `extensions:`. An extension error does not fall through into Wasm.
+
+```elixir
+defmodule F3.Examples.TradeCount do
+  @behaviour F3.Extension
+
+  @impl true
+  def decode(_bytes, _metadata, :i64) do
+    F3.Column.from_native(:i64, 1, <<9::little-64>>, nil)
+  end
+
+  def decode(_bytes, _metadata, _type) do
+    {:error, F3.Error.unsupported_encoding(:decode, "only int64")}
+  end
+end
+
+key = %{
+  encoding: :custom_wasm,
+  version: %{major: 1, minor: 0, patch: 0},
+  compression: :uncompressed
+}
+
+{:ok, column} = F3.Examples.TradeCount.decode(<<1>>, Map.put(key, :wasm_id, nil), :i64)
+9 = F3.Column.value(column, 0)
+{:ok, pid} = F3.Registry.start_link(capacity: 1)
+:ok = F3.Registry.register(pid, key, F3.Examples.TradeCount)
+{:ok, F3.Examples.TradeCount} = F3.Registry.lookup(pid, Map.put(key, :wasm_id, 0))
+:ok = F3.Registry.unregister(pid, key)
+:error = F3.Registry.lookup(nil, key)
+```
+
+## Wire version
+
+Chunk checksums use XXH64 with seed 0. A `nil` checksum means the footer stored none. This library accepts wire version 0.1 only.
+
+```elixir
+15154266338359012955 = F3.Checksum.xxh64("a")
+15154266338359012955 = F3.Checksum.xxh64("a", 0)
+:ok = F3.Checksum.verify("a", nil)
+{:error, mismatch} = F3.Checksum.verify("a", 1)
+:checksum = mismatch.category
+true = F3.Format.compatible?(0, 1)
+false = F3.Format.compatible?(0, 2)
+32 = F3.Format.postscript_size()
+"F3" = F3.Format.magic()
+```

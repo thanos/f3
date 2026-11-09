@@ -7,12 +7,28 @@ defmodule Mix.Tasks.F3.Inspect do
       mix f3.inspect test/fixtures/small.f3 --json
 
   The output is `F3.inspect/2`. It does not read row data.
+
+  `--detail` adds row groups. `--json` prints the metadata map.
+  `--max-metadata-bytes N` overrides the footer cap. No path, or an unknown
+  flag, raises `Mix.Error`. A missing file raises `Mix.Error` with the
+  `F3.Error` message.
   """
 
   use Mix.Task
 
   @shortdoc "Print F3 postscript and footer metadata"
 
+  @doc """
+  Runs the task.
+
+  `args` is the command-line list. A successful run prints the inspection
+  and returns `:ok`. An empty list raises `Mix.Error`.
+
+  ## Examples
+
+      iex> Mix.Tasks.F3.Inspect.run([])
+      ** (Mix.Error) usage: mix f3.inspect FILE [--detail] [--json] [--max-metadata-bytes N]
+  """
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("app.start")

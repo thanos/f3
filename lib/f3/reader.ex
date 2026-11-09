@@ -24,12 +24,28 @@ defmodule F3.Reader do
 
   @doc """
   Default number of rows in one batch.
+
+  ## Examples
+
+      iex> F3.Reader.default_batch_size()
+      8192
   """
   @spec default_batch_size() :: pos_integer()
   def default_batch_size, do: @default_batch_size
 
   @doc """
   Reads the selected row groups into columnar batches.
+
+  Options match `F3.read/2`. Without the native decoder this returns
+  `:native_unavailable`. Options that are not a keyword list are
+  `:invalid_argument`. This does not raise for those cases.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:error, error} = F3.Reader.read(file, columns: ["symbol"], batch_size: 1024)
+      iex> error.category
+      :native_unavailable
   """
   @spec read(F3.File.t(), keyword()) :: {:ok, [F3.Batch.t()]} | {:error, F3.Error.t()}
   def read(file, opts) when is_list(opts) do
@@ -46,7 +62,15 @@ defmodule F3.Reader do
 
   @doc """
   Lazy batches. The first pull reads the footer. Later pulls read encoding
-  units. A pull that cannot decode throws `{:f3, %F3.Error{}}`.
+  units. A pull that cannot decode throws `{:f3, %F3.Error{}}`. Without the
+  native decoder this returns the error and does not return a stream.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:error, error} = F3.Reader.stream(file, [])
+      iex> error.category
+      :native_unavailable
   """
   @spec stream(F3.File.t(), keyword()) :: {:ok, Enumerable.t()} | {:error, F3.Error.t()}
   def stream(file, opts) when is_list(opts) do
@@ -71,6 +95,15 @@ defmodule F3.Reader do
 
   @doc """
   Refuses a shared dictionary. Wasm is decided later by `F3.Dispatch`.
+  A chunk with `dictionary: :none` and no refused encoding unit returns `:ok`.
+  A shared dictionary is `:unsupported_encoding` and does not raise.
+
+  ## Examples
+
+      iex> :ok = F3.Reader.reject_chunk(%{dictionary: :none, encunits: []})
+      iex> {:error, error} = F3.Reader.reject_chunk(%{dictionary: {:shared, 3}})
+      iex> error.message
+      "shared dictionary 3 is not loaded"
   """
   @spec reject_chunk(F3.RowGroup.chunk()) :: :ok | {:error, F3.Error.t()}
   def reject_chunk(%{dictionary: {:shared, index}}) do

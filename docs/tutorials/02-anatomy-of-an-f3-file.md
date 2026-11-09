@@ -28,7 +28,7 @@ Walking backward from the postscript, the pinned `File.fbs` comment describes:
 
 An IOUnit is the unit of I/O. An EncUnit is the unit of encoding. They are different because a storage read and an encoding block do not have to be the same size. The default writer uses an 8 MiB IOUnit and a 65536-value EncUnit. A small fixture does not fill an 8 MiB IOUnit. The units still exist in the metadata; the file is just short.
 
-`CASCADE` (0) means Vortex. `CUSTOM_WASM` (255) means the EncUnit is opaque without the Wasm decoder stored in the file. The small fixture uses the default writer path: no built-in Wasm flag, `EncoderDictionary`, uncompressed. Whether a later fixture in `test/fixtures/` embeds Wasm is recorded in `manifest.json`. This library does not execute it.
+`CASCADE` (0) means Vortex. `CUSTOM_WASM` (255) means the EncUnit is opaque without the Wasm decoder stored in the file. The small fixture uses the default writer path: no built-in Wasm flag, `EncoderDictionary`, uncompressed. Whether a later fixture in `test/fixtures/` embeds Wasm is recorded in `manifest.json`. The inspector does not execute it. A read executes it only when the caller passes `wasm: :sandbox`.
 
 ```mermaid
 flowchart BT
@@ -125,7 +125,7 @@ Each column has one cascade EncUnit. The `WASMBinaries` line is a pointer. The i
 
 ## What is experimental?
 
-The layout comes from `format/File.fbs` and `FileWriter::finish` at `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The schema says it can change. Unknown checksum bytes panic in the upstream converter. This library records an unknown checksum byte and continues. It does not verify either checksum. Footer compression other than uncompressed is refused. Wasm bytes are not executed.
+The layout comes from `format/File.fbs` and `FileWriter::finish` at `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The schema says it can change. Unknown checksum bytes panic in the upstream converter. This library records an unknown checksum byte and continues. It does not verify either checksum. Footer compression other than uncompressed is refused. The inspector does not execute Wasm bytes. A sandboxed read can. See tutorial 6.
 
 ## Next
 

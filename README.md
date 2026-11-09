@@ -1,56 +1,45 @@
 # F3 for Elixir
 
-Experimental library for the [F3](https://github.com/future-file-format/F3) columnar file format. Upstream F3 is a research prototype. This package reads the postscript, the footer, and, when the native decoder is compiled, CASCADE row data. `CUSTOM_WASM` runs only when a read passes `wasm: :sandbox`. A local writer is available in that same native build.
+[![CI](https://github.com/thanos/f3/actions/workflows/ci.yml/badge.svg)](https://github.com/thanos/f3/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/f3.svg)](https://hex.pm/packages/f3)
+[![Hexdocs](https://img.shields.io/badge/hex-docs-7e57c2.svg)](https://hexdocs.pm/f3)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-The pinned upstream commit is `bd92506447dc1333820cfe9a34ebbf497fe0219e`. The only wire version this build accepts is major 0, minor 1. See [docs/upstream-compatibility.md](docs/upstream-compatibility.md).
+F3 is a columnar research file format. This library, version 0.1.0, opens an F3 file from Elixir, prints the schema and footer, and reads or writes rows when the native decoder is loaded.
 
-## What works
+The only wire version this library accepts is major 0, minor 1. Hex has not published the package. Add this repository as a path dependency until a release exists. A published package downloads precompiled NIFs for macOS Apple silicon and Linux x86_64. In this checkout, compile them with `F3_BUILD_NATIVE=1`.
 
-`F3.open/2` and `F3.close/1` acquire and release a local file or an in-memory binary. `F3.schema/1`, `F3.metadata/1`, and `F3.inspect/2` decode the footer. `F3.read/2` and `F3.stream/2` decode CASCADE units when the native decoder is loaded, and return `:native_unavailable` when it is not. `F3.Writer.open/2` writes a local file in that build. Without it, a valid open returns `:not_implemented` and creates no file. There is no application callback to start.
+## Quick start
 
 ```elixir
 {:ok, file} = F3.open("test/fixtures/small.f3")
 {:ok, schema} = F3.schema(file)
 {:ok, text} = F3.inspect(file)
+{:ok, file} = F3.close(file)
+```
+
+`small.f3` has three rows. The fields are `trade_id` (`int64`), `symbol` (`utf8`), and `price` (`float64`). `F3.inspect/2` prints that summary and does not read the row payload.
+
+Reading the rows needs the native decoder:
+
+```elixir
+{:ok, file} = F3.open("test/fixtures/small.f3")
 {:ok, [batch]} = F3.read(file)
 {:ok, rows} = F3.Batch.to_rows(batch)
 {:ok, file} = F3.close(file)
 ```
 
-`mix f3.inspect test/fixtures/small.f3` prints the same summary. Checksums are shown and not verified. A Wasm section is a pointer until a read passes `wasm: :sandbox`. Inspection does not execute it.
+Without that decoder, `F3.read/2` returns `{:error, %F3.Error{category: :native_unavailable}}`. Schema and inspect still succeed. `mix f3.inspect test/fixtures/small.f3` prints the same summary.
 
-A memory source does not touch the path:
+A memory source and an HTTP source do not open `path`. HTTP is opt-in and does not follow redirects.
 
 ```elixir
 {:ok, file} = F3.open("unused", source: {:memory, binary})
+{:ok, file} = F3.open("unused", source: {:http, url})
 ```
 
-## Build
+## Guide
 
-Elixir 1.20.2 and OTP 28. The default `mix test` does not compile Rust.
+Start with [Introduction](docs/guide/01-introduction.md) and [Quick start](docs/guide/02-quick-start.md). [Configuration](docs/guide/03-configuration.md) is the option list. Reading, writing, streaming, decoders, and Wasm follow. [Status and roadmap](docs/guide/11-status-and-roadmap.md) says what 0.1.0 includes.
 
-```shell
-mix deps.get
-mix test
-mix ci
-```
-
-`mix ci` is the required CI job: format, compile with warnings as errors, Credo, tests with coverage, and docs. It stops at the first failing step. The test step stops at the first failed test and requires 90% line coverage.
-
-`F3_BUILD_NATIVE=1 mix test --only native` builds `native/f3_native` and the out-of-process writer, then runs the conformance suite. The NIF build calls rustup's `nightly-2025-11-15` binaries even when asdf or Homebrew puts a stable `cargo` earlier on `PATH`. The writer is a separate `f3_write` binary built from pinned `fff-poc` with `nightly-2025-02-24`. The NIF decodes one CASCADE encoding unit on the dirty CPU scheduler and, only when Elixir asks, one Wasm module with Wasmtime 28. It does not link `fff-poc` and it does not install a global allocator. Mix recompiles `F3.Native` when the flag changes. The default `mix test` excludes the native tests and does not invoke `cargo`.
-
-Regenerate fixtures with `scripts/fixtures/generate.sh`. That script clones the pinned upstream commit, builds `fff-poc` with Rust `nightly-2025-02-24`, and rewrites `test/fixtures/`. It is not part of `mix test`.
-
-## Status
-
-| Area | Status |
-| --- | --- |
-| Open and close a byte source | implemented |
-| Postscript, schema, and footer metadata | implemented |
-| Read rows, project, stream | implemented when `F3_BUILD_NATIVE=1` |
-| Write a local file | implemented when `F3_BUILD_NATIVE=1` |
-| Embedded Wasm execution | refused, and it does not run |
-
-The package name `f3` returned 404 from the Hex API on 2026-11-03. Nothing has been published. Re-check Hex before any release.
-
-Tutorials: [docs/tutorials/README.md](docs/tutorials/README.md).
+Runnable examples are in [docs/examples.livemd](docs/examples.livemd). Building the native decoder is in [docs/contributing.md](docs/contributing.md).

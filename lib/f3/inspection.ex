@@ -9,6 +9,21 @@ defmodule F3.Inspection do
   alias F3.Metadata
   alias F3.Schema
 
+  @doc """
+  Renders metadata as text or JSON.
+
+  `format` is `:text` or `:json`. `detail` adds row groups and sections when
+  `format` is `:text`. JSON ignores `detail` and is `F3.Metadata.to_map/1`.
+  Any other format raises `FunctionClauseError`. The text does not include
+  column bytes.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, meta} = F3.metadata(file)
+      iex> F3.Inspection.render(meta, :text, false) =~ "rows: 3"
+      true
+  """
   @spec render(Metadata.t(), :text | :json, boolean()) :: String.t()
   def render(metadata, :json, _detail), do: JSON.encode!(Metadata.to_map(metadata))
   def render(metadata, :text, true), do: detail(metadata)

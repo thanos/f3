@@ -88,7 +88,7 @@ WASI is linked. The context built for an instance has size-capped stdout and std
 
 Wasm bytes live in the `WASMBinaries` section. `wasm_id` is the index into that vector. Upstream compiles every module in the section on first use. This library compiles one module, only after `wasm: :sandbox` (or a registered extension has already declined the unit), and only the id the encunit names. A compiled module may be cached by the SHA-256 of its bytes. The cache is bounded to 8 modules and 8 MiB, and clearing it drops every entry. A cache hit still requires that read to have opted in. Metadata inspection does not compile or execute anything.
 
-`DEFAULT_ENCODING_VERSIONS` lists CASCADE `0.21.0` and CUSTOM_WASM `1.0.0`. `create_encunit_decoder` uses Wasm for CASCADE only when the file version is newer and the reader major is 0 or the majors differ. Native `0.21.0` has major 0, so a newer CASCADE version takes Wasm and an equal or older version stays on the Vortex NIF. The eight committed fixtures stay on that NIF. `lib_urls` stay inert strings. No HTTP client is added. Wasmtime and `wasi-common` are Apache-2.0.
+`DEFAULT_ENCODING_VERSIONS` lists CASCADE `0.21.0` and CUSTOM_WASM `1.0.0`. `create_encunit_decoder` uses Wasm for CASCADE only when the file version is newer and the reader major is 0 or the majors differ. Native `0.21.0` has major 0, so a newer CASCADE version takes Wasm and an equal or older version stays on the Vortex NIF. The eight committed fixtures stay on that NIF. `lib_urls` stay inert strings. An opt-in HTTP range source does not request them and does not follow redirects. The `wasmtime` 28.0.0 and `wasi-common` 28.0.0 manifests set `license = "Apache-2.0 WITH LLVM-exception"`.
 
 ## What this library claims
 
@@ -102,7 +102,7 @@ Stage 0 claims the constants, the source lifecycle, and the fixtures produced by
 4. Upstream's stated test host is Intel Debian 12. Apple Silicon and Linux arm64 are untested by upstream. Fixture generation on this Apple Silicon machine is a local experiment, not an upstream support claim.
 5. `ChecksumType::from` panics on an unknown byte. A later parser must return an error before that path exists.
 6. Metadata length fields are attacker-controlled. Stage 0 does not allocate from them. Stage 1 must cap them before any read.
-7. Embedded Wasm and `lib_urls` in the schema are not fetched and not executed. A later stage must keep that as the default.
+7. Embedded Wasm and `lib_urls` stay unfetched by default. Wasm runs only for `wasm: :sandbox`. An opt-in HTTP source does not follow redirects and does not request `lib_urls`.
 8. The Hex name `f3` was free on the inspection date. Publish only after checking again, and only with an explicit experimental label.
 9. `custom_wasm.f3` was produced on this Apple Silicon machine after `brew install wasi-libc` (34) and `wasi-runtimes` (23.1.5). Homebrew LLVM 23.1.5 compiled the C objects in `zstd-sys`. The final Wasm link used the `nightly-2025-02-24` rustc linker, not Homebrew clang. The fixture is one local writer run. It is not an upstream support claim for Apple Silicon.
 10. `fff-poc` samples encodings with `rand::thread_rng`. Regenerating fixtures is not always byte-identical. The manifest records one real run.

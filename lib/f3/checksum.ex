@@ -17,13 +17,27 @@ defmodule F3.Checksum do
   @mask 0xFFFFFFFFFFFFFFFF
 
   @doc """
-  XXH64 of `bytes` with seed 0.
+  XXH64 of `bytes` with seed 0. `bytes` must be a binary. Any other term
+  raises `FunctionClauseError`.
+
+  ## Examples
+
+      iex> F3.Checksum.xxh64("")
+      17241709254077376921
+
+      iex> F3.Checksum.xxh64("a")
+      15154266338359012955
   """
   @spec xxh64(binary()) :: non_neg_integer()
   def xxh64(bytes) when is_binary(bytes), do: xxh64(bytes, 0)
 
   @doc """
-  XXH64 of `bytes` with an integer seed.
+  XXH64 of `bytes` with an integer seed. Seed 0 matches `xxh64/1`.
+
+  ## Examples
+
+      iex> F3.Checksum.xxh64("a", 0)
+      15154266338359012955
   """
   @spec xxh64(binary(), integer()) :: non_neg_integer()
   def xxh64(bytes, seed) when is_binary(bytes) and is_integer(seed) do
@@ -33,7 +47,17 @@ defmodule F3.Checksum do
   end
 
   @doc """
-  Checks a chunk checksum. `nil` means the footer did not store one.
+  Checks a chunk checksum. `nil` means the footer did not store one and
+  returns `:ok`. A mismatch is `{:error, %F3.Error{category: :checksum}}`.
+  This does not raise.
+
+  ## Examples
+
+      iex> :ok = F3.Checksum.verify("a", nil)
+      iex> :ok = F3.Checksum.verify("a", F3.Checksum.xxh64("a"))
+      iex> {:error, error} = F3.Checksum.verify("a", 1)
+      iex> error.message
+      "chunk checksum mismatch"
   """
   @spec verify(binary(), non_neg_integer() | nil) :: :ok | {:error, F3.Error.t()}
   def verify(bytes, checksum) when is_binary(bytes) and is_nil(checksum), do: :ok

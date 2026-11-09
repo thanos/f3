@@ -47,7 +47,7 @@ The second row group stays unread after `Enum.take/2`. Closing is still the call
 
 ## What is experimental?
 
-The eight fixtures fit in one encoding unit each. They do not show how a multi-unit column is concatenated, and they are the wrong size for a scheduler measurement. `CUSTOM_WASM` and a shared dictionary are refused. The bytes are not executed. Bool and plain binary columns are not in the fixtures, so this reader does not claim them.
+The eight fixtures fit in one encoding unit each. They do not show how a multi-unit column is concatenated, and they are the wrong size for a scheduler measurement. A shared dictionary is refused. `CUSTOM_WASM` runs only when the caller passes `wasm: :sandbox`. Bool is claimed from the writer round trip. Plain binary is not a claimed type.
 
 ## Next
 

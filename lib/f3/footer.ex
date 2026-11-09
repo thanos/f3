@@ -19,6 +19,21 @@ defmodule F3.Footer do
 
   @doc """
   Reads the metadata span and returns the decoded file metadata.
+
+  `max` is the metadata cap in bytes. A short file is `:truncated`. A file
+  that is not an `F3.File`, or a negative `max`, raises `FunctionClauseError`.
+
+  ## Examples
+
+      iex> {:ok, file} = F3.open("test/fixtures/small.f3")
+      iex> {:ok, meta} = F3.Footer.load(file, F3.Postscript.max_metadata_bytes())
+      iex> Enum.map(meta.schema.fields, & &1.name)
+      ["trade_id", "symbol", "price"]
+
+      iex> {:ok, short} = F3.open({:memory, "no"})
+      iex> {:error, error} = F3.Footer.load(short, 32)
+      iex> error.category
+      :truncated
   """
   @spec load(F3.File.t(), non_neg_integer()) :: {:ok, Metadata.t()} | {:error, Error.t()}
   def load(%F3.File{} = file, max) when is_integer(max) and max >= 0 do
@@ -30,6 +45,30 @@ defmodule F3.Footer do
 
   @doc """
   Decodes a metadata span that was already bounds-checked.
+
+  `span` is the metadata bytes. `postscript.footer_size` selects the footer
+  at the end of that span. A span shorter than `footer_size` raises
+  `ArgumentError`. A span that is not a FlatBuffers table returns
+  `:corrupt_metadata`.
+
+  ## Examples
+
+      iex> post = %F3.Postscript{
+      ...>   metadata_size: 1,
+      ...>   footer_size: 1,
+      ...>   footer_compression: :uncompressed,
+      ...>   checksum_type: :xxhash,
+      ...>   data_checksum: 0,
+      ...>   schema_checksum: 0,
+      ...>   major_version: 0,
+      ...>   minor_version: 1,
+      ...>   metadata_offset: 0,
+      ...>   footer_offset: 0,
+      ...>   file_size: 1
+      ...> }
+      iex> {:error, error} = F3.Footer.decode(<<0>>, post)
+      iex> error.category
+      :corrupt_metadata
   """
   @spec decode(binary(), Postscript.t()) :: {:ok, Metadata.t()} | {:error, Error.t()}
   def decode(span, %Postscript{} = postscript) when is_binary(span) do

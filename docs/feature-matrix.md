@@ -2,12 +2,13 @@
 
 Status values: `implemented`, `not implemented`, `untested`. A fixture can contain a feature this library does not read. That is not support.
 
-The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/stage-0.md), [test-reports/stage-1.md](test-reports/stage-1.md), [test-reports/stage-2.md](test-reports/stage-2.md), [test-reports/stage-3.md](test-reports/stage-3.md), and [test-reports/stage-4.md](test-reports/stage-4.md). The required CI jobs are configured and have not been run from this machine.
+The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/stage-0.md), [test-reports/stage-1.md](test-reports/stage-1.md), [test-reports/stage-2.md](test-reports/stage-2.md), [test-reports/stage-3.md](test-reports/stage-3.md), [test-reports/stage-4.md](test-reports/stage-4.md), and [test-reports/stage-5.md](test-reports/stage-5.md). The required CI jobs are configured and have not been run from this machine.
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Open and close a local file | implemented | `F3.IO.Local`, contract tests |
 | Open and close an in-memory binary | implemented | `F3.IO.Memory`, contract tests |
+| HTTP range read | implemented | `F3.IO.HTTP`. Opt-in. Redirects refused. `:minio` excluded unless `F3_MINIO=1` |
 | Positioned read capped by the caller | implemented | `pread/3` tests |
 | Idempotent close, error after close | implemented | contract tests |
 | Wire version constants 0.1 | implemented | `F3.Format`, doctests |
@@ -33,4 +34,6 @@ The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/sta
 | Linux x86_64 CI | configured, not run | `.github/workflows/ci.yml` job `test (ubuntu-latest)` |
 | macOS arm64 CI | configured, not run | `.github/workflows/ci.yml` job `test (macos-15)` |
 | Linux arm64 | untested | no job |
+| Precompiled NIF release | configured, not run | `.github/workflows/precompile.yml` on a `v*` tag. Targets: `aarch64-apple-darwin`, `x86_64-unknown-linux-gnu`. NIF version 2.17 |
+| Hex publish | configured, not run | `.github/workflows/publish.yml` after that GitHub release. Requires the `HEX_API_KEY` secret |
 | Upstream Intel Debian 12 | untested by this repo | upstream's own claim, not reproduced here |

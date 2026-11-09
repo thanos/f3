@@ -1,0 +1,108 @@
+# Builds precompiled NIFs and the f3_write helper, then attaches them to
+# the GitHub release for a v* tag. Publish to Hex is a separate workflow
+# called after that release exists.
+#
+# Targets match the required CI runners. OTP 28 uses NIF version 2.17.
+# The NIF selects nightly-2025-11-15. The writer helper selects
+# nightly-2025-02-24. workflow_dispatch builds the archives and uploads
+# them as artifacts. It does not create a release and it does not publish.
+
+name: Precompile NIFs
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.20.2"
+          otp-version: "28"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-11-15
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-02-24
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/f3_native
+          prefix-key: ${{ matrix.target }}
+      - run: mix deps.get
+        env:
+          F3_BUILD_NATIVE: "1"
+          RUSTLER_NIF_VERSION: "2.17"
+      - run: mix compile --force --warnings-as-errors
+        env:
+          F3_BUILD_NATIVE: "1"
+          RUSTLER_NIF_VERSION: "2.17"
+      - name: Package archives
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n 1)
+          nif="libf3_native-v${version}-nif-2.17-${TARGET}.so"
+          test -f priv/native/f3_native.so
+          test -x priv/native/f3_write
+          cp priv/native/f3_native.so "${nif}"
+          tar -czf "${nif}.tar.gz" "${nif}"
+          tar -czf "f3_write-v${version}-${TARGET}.tar.gz" -C priv/native f3_write
+          ls -l ./*.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: precompiled-${{ matrix.target }}
+          if-no-files-found: error
+          path: |
+            libf3_native-*.tar.gz
+            f3_write-*.tar.gz
+
+  release:
+    name: GitHub release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Require both targets
+        run: |
+          set -euo pipefail
+          count=$(find artifacts -name '*.tar.gz' | wc -l | tr -d ' ')
+          find artifacts -name '*.tar.gz'
+          test "$count" -eq 4
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/*.tar.gz
+
+  publish:
+    name: Publish to Hex
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+    secrets: inherit
+    uses: ./.github/workflows/publish.yml
