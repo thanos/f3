@@ -102,25 +102,37 @@ defmodule F3.MixProject do
         "Upstream F3" => @upstream,
         "Paper" => @paper
       },
-      files: ~w(
-        lib
-        native/f3_native/src
-        native/f3_native/Cargo.toml
-        native/f3_native/Cargo.lock
-        native/f3_native/rust-toolchain.toml
-        native/f3_native/README.md
-        native/f3_write/src
-        native/f3_write/build.ex
-        native/f3_write/Cargo.toml
-        native/f3_write/rust-toolchain.toml
-        checksum-*.exs
-        mix.exs
-        README.md
-        LICENSE
-        NOTICE
-        CHANGELOG.md
-      )
+      files: package_files()
     ]
+  end
+
+  # Checksum files are written by the publish workflow just before
+  # `mix hex.publish`. A local dry-run has none, and Hex rejects a
+  # files entry that matches nothing.
+  defp package_files do
+    checksums =
+      __DIR__
+      |> Path.join("checksum-*.exs")
+      |> Path.wildcard()
+      |> Enum.map(&Path.relative_to(&1, __DIR__))
+
+    ~w(
+      lib
+      native/f3_native/src
+      native/f3_native/Cargo.toml
+      native/f3_native/Cargo.lock
+      native/f3_native/rust-toolchain.toml
+      native/f3_native/README.md
+      native/f3_write/src
+      native/f3_write/build.ex
+      native/f3_write/Cargo.toml
+      native/f3_write/rust-toolchain.toml
+      mix.exs
+      README.md
+      LICENSE
+      NOTICE
+      CHANGELOG.md
+    ) ++ checksums
   end
 
   defp aliases do
