@@ -34,4 +34,6 @@ The local Elixir runs are recorded in [test-reports/stage-0.md](test-reports/sta
 | Linux x86_64 CI | configured, not run | `.github/workflows/ci.yml` job `test (ubuntu-latest)` |
 | macOS arm64 CI | configured, not run | `.github/workflows/ci.yml` job `test (macos-15)` |
 | Linux arm64 | untested | no job |
+| Precompiled NIF release | configured, not run | `.github/workflows/precompile.yml` on a `v*` tag. Targets: `aarch64-apple-darwin`, `x86_64-unknown-linux-gnu`. NIF version 2.17 |
+| Hex publish | configured, not run | `.github/workflows/publish.yml` after that GitHub release. Requires the `HEX_API_KEY` secret |
 | Upstream Intel Debian 12 | untested by this repo | upstream's own claim, not reproduced here |

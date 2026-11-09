@@ -9,6 +9,9 @@ erl_crash.dump
 # Local upstream checkout and tool output
 /tmp/
 
+# Generated when a release is packaged. A git checkout stays rust-free.
+/checksum-*.exs
+
 # Native crate build
 /native/f3_native/target/
 /native/f3_native/.f3_build_native

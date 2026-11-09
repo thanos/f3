@@ -14,4 +14,4 @@ You can open three kinds of source:
 
 This library does not write to a remote URL. It does not fetch footer `lib_urls`. It does not follow HTTP redirects. It does not load shared dictionaries. It does not claim signed `int8` or `int16`, `float16`, plain binary, decimal, dates, timestamps, maps, or Arrow dictionary columns.
 
-Hex has not published this package. Add the repository as a path dependency until a release exists. The [quick start](02-quick-start.md) opens a committed fixture. [Status and roadmap](11-status-and-roadmap.md) lists what 0.1.0 includes.
+Hex has not published this package. Add the repository as a path dependency until a release exists. A published package downloads precompiled NIFs for macOS Apple silicon and Linux x86_64. The [quick start](02-quick-start.md) opens a committed fixture. [Status and roadmap](11-status-and-roadmap.md) lists what 0.1.0 includes.

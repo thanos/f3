@@ -1,8 +1,13 @@
 # F3 for Elixir
 
-F3 is a columnar research file format. This library, version 0.1.0, opens an F3 file from Elixir, prints the schema and footer, and reads or writes rows when the native decoder is compiled.
+[![CI](https://github.com/thanos/f3/actions/workflows/ci.yml/badge.svg)](https://github.com/thanos/f3/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/f3.svg)](https://hex.pm/packages/f3)
+[![Hexdocs](https://img.shields.io/badge/hex-docs-7e57c2.svg)](https://hexdocs.pm/f3)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-The only wire version this library accepts is major 0, minor 1. Hex has not published the package. Add this repository as a path dependency until a release exists.
+F3 is a columnar research file format. This library, version 0.1.0, opens an F3 file from Elixir, prints the schema and footer, and reads or writes rows when the native decoder is loaded.
+
+The only wire version this library accepts is major 0, minor 1. Hex has not published the package. Add this repository as a path dependency until a release exists. A published package downloads precompiled NIFs for macOS Apple silicon and Linux x86_64. In this checkout, compile them with `F3_BUILD_NATIVE=1`.
 
 ## Quick start
 

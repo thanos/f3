@@ -1,6 +1,6 @@
 # Status and roadmap
 
-Library version 0.1.0. The only accepted wire version is major 0, minor 1. Hex has not published this package. There is no precompiled NIF. Row reads and local writes need `F3_BUILD_NATIVE=1`.
+Library version 0.1.0. The only accepted wire version is major 0, minor 1. Hex has not published this package. A tag matching that version builds precompiled NIFs for macOS Apple silicon and Linux x86_64 and can publish them. That publish has not been run. In this checkout, row reads and local writes need `F3_BUILD_NATIVE=1`.
 
 ## This version
 
@@ -25,7 +25,7 @@ This version includes:
 
 Still outside this version:
 
-- a Hex release, and precompiled NIFs
+- the first publish to Hex (the workflow is in the repository and has not been run)
 - shared dictionaries
 - signed `int8` and `int16`, `float16`, plain binary, decimal, dates, timestamps, maps, and Arrow dictionary columns
 - writes to a remote URL, and fetches of footer `lib_urls`

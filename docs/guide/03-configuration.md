@@ -59,7 +59,7 @@ A bare type such as `:int64` is non-null. `{type, null: true}` is nullable. An u
 
 ## Native decoder
 
-Row reads and local writes need a native build. Metadata inspection does not.
+Row reads and local writes need a native build. Metadata inspection does not. A Hex package downloads precompiled NIFs for macOS Apple silicon and Linux x86_64. This checkout compiles them with:
 
 ```shell
 F3_BUILD_NATIVE=1 mix compile

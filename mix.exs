@@ -46,13 +46,21 @@ defmodule F3.MixProject do
   defp install_writer do
     alias F3.Writer.Build
 
-    if System.get_env("F3_BUILD_NATIVE") == "1" do
+    if writer_requested?() do
       unless Code.ensure_loaded?(Build) do
         Code.compile_file(Path.join(__DIR__, "native/f3_write/build.ex"))
       end
 
       Build.install!()
     end
+  end
+
+  # A Hex package ships checksum-f3_write.exs and downloads the helper.
+  # This checkout has no checksum file, so Mix compiles the helper only
+  # when F3_BUILD_NATIVE=1.
+  defp writer_requested? do
+    System.get_env("F3_BUILD_NATIVE") == "1" or
+      File.regular?(Path.join(__DIR__, "checksum-f3_write.exs"))
   end
 
   defp stamp_native_flag do
@@ -69,6 +77,7 @@ defmodule F3.MixProject do
   defp deps do
     [
       {:rustler, "~> 0.38.0", optional: true},
+      {:rustler_precompiled, "~> 0.8.2"},
       {:ex_doc, "~> 0.38", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mox, "~> 1.2", only: :test}
@@ -78,7 +87,8 @@ defmodule F3.MixProject do
   defp description do
     """
     Experimental Elixir library for the F3 columnar file format.
-    Reading CASCADE row data and writing a local file need the optional native build.
+    A Hex release downloads precompiled NIFs for macOS Apple silicon and Linux x86_64.
+    A git checkout compiles that native code only when F3_BUILD_NATIVE=1.
     Upstream F3 is a research prototype.
     """
   end
@@ -88,6 +98,7 @@ defmodule F3.MixProject do
       name: "f3",
       licenses: ["MIT"],
       links: %{
+        "GitHub" => "https://github.com/thanos/f3",
         "Upstream F3" => @upstream,
         "Paper" => @paper
       },
@@ -95,11 +106,14 @@ defmodule F3.MixProject do
         lib
         native/f3_native/src
         native/f3_native/Cargo.toml
+        native/f3_native/Cargo.lock
+        native/f3_native/rust-toolchain.toml
         native/f3_native/README.md
         native/f3_write/src
         native/f3_write/build.ex
         native/f3_write/Cargo.toml
         native/f3_write/rust-toolchain.toml
+        checksum-*.exs
         mix.exs
         README.md
         LICENSE

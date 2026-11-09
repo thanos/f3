@@ -1,6 +1,6 @@
 # Quick start
 
-Add the library as a path dependency. Hex has not published it.
+Add the library as a path dependency. Hex has not published it. A published package downloads precompiled NIFs for macOS Apple silicon and Linux x86_64.
 
 ```elixir
 def deps do
